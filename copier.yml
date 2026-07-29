@@ -1,0 +1,23 @@
+project_name:
+  type: str
+  help: "Название проекта"
+  default: "My FastAPI Service"
+
+project_slug:
+  type: str
+  default: "{{ project_name.lower().replace(' ', '_').replace('-', '_') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Имя пакета должно начинаться с буквы и содержать только a-z, 0-9 и _
+    {% endif %}
+
+python_version:
+  type: str
+  default: "3.13"
+
+service_port:
+  type: int
+  default: 8000
+
+_copy_without_render:
+  - "*.lock"

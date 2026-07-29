@@ -1,0 +1,80 @@
+{
+  "ruff.path": [],
+  "ruff.interpreter": [
+    "${workspaceFolder}/.venv/bin/python3"
+  ],
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.nativeServer": "on",
+  "ruff.configurationPreference": "filesystemFirst",
+  "ruff.lineLength": 88,
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "diffEditor.ignoreTrimWhitespace": false
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.biome": "explicit",
+      "source.organizeImports.biome": "explicit"
+    },
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascriptreact]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.biome": "explicit",
+      "source.organizeImports.biome": "explicit"
+    },
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[jsonc]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "notebook.formatOnSave.enabled": true,
+  "notebook.codeActionsOnSave": {
+    "notebook.source.fixAll.ruff": "explicit",
+    "notebook.source.organizeImports.ruff": "explicit"
+  },
+  "errorLens.fontFamily": "",
+  "errorLens.border": [
+    "1px solid",
+    "1px dotted",
+    "1px dashed",
+    "1px solid #00000040"
+  ],
+  "errorLens.messageTemplate": "$severity $message ",
+  "errorLens.severityText": [
+    "❌",
+    "⚠️",
+    "ℹ️",
+    "📗"
+  ],
+  "makefile.configureOnOpen": false,
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.testing.unittestArgs": [
+    "-v",
+    "-s",
+    "tests",
+    "-p",
+    "test_*.py",
+    "-t",
+    "."
+  ],
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": true,
+  "files.associations": {
+    "*.env*": "properties",
+  }
+}

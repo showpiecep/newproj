@@ -1,0 +1,29 @@
+# Скопируйте файл в config.yaml и заполните секреты.
+# config.yaml игнорируется Git и является единственным источником настроек.
+app:
+  name: "{{ project_name }}"
+  environment: local
+  debug: true
+  host: "0.0.0.0"
+  port: {{ service_port }}
+
+database:
+  enabled: false
+  dsn: "postgresql://app:CHANGE_ME@localhost:5432/app"
+  pool:
+    min_size: 2
+    max_size: 10
+    timeout_seconds: 10
+
+redis:
+  enabled: false
+  url: "redis://localhost:6379/0"
+  key_prefix: "{{ project_slug }}:"
+
+security:
+  secret_key: "CHANGE_ME_CHANGE_ME"
+  access_token_ttl_seconds: 3600
+
+logging:
+  level: INFO
+  json: false

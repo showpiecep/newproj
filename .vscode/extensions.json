@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-toolsai.jupyter",
+    "charliermarsh.ruff",
+    "biomejs.biome",
+    "ms-python.vscode-pylance",
+    "usernamehw.errorlens",
+    "ms-toolsai.jupyter",
+    "showpiecep.notebook-cell-organizer"
+  ]
+}
