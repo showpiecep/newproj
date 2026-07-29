@@ -23,20 +23,39 @@ make run
 Путь к другому YAML можно передать приложению программно:
 
 ```python
-settings = Settings.load(Path("/run/secrets/service-config.yaml"))
-app = Application(settings).create_app()
+config = Config.load(Path("/run/secrets/service-config.yaml"))
+app = Application(config).create_app()
 ```
 
 Такой явный путь удобен для Docker/Kubernetes: YAML монтируется как один secret
 volume без преобразования вложенных ключей в переменные окружения.
 
-`Settings` — мастер-модель всех настроек. `Application` владеет FastAPI lifespan:
-на старте он создаёт инфраструктурные классы только из предназначенных им секций
-(`DatabaseSettings` → `Database`, `RedisSettings` → `RedisCache`), а на остановке
-закрывает их в обратном порядке. Секреты скрыты в `repr` благодаря `SecretStr`.
+`Config` — мастер-модель, содержащая вложенные секции настроек. Каждая новая область
+конфигурации получает отдельный модуль в пакете `settings`, после чего добавляется
+полем в `Config`.
 
-Реализации `Database` и `RedisCache` оставлены безопасными точками расширения.
-Подключите в них конкретные драйверы, не меняя схему конфигурации или lifespan.
+При каждом запуске FastAPI lifespan строит актуальный `config.template.yaml`
+непосредственно из Pydantic-моделей. Благодаря этому структура шаблона не расходится
+со структурой кода. Путь к шаблону задаётся полем
+`app.config_template_path`.
+
+Исходный пакет намеренно остаётся минимальным:
+
+```text
+src/{{ project_slug }}/
+├── main.py
+├── application/
+│   ├── app.py
+│   └── routers/
+│       └── __init__.py
+├── settings/
+│   ├── app.py
+│   ├── base.py
+│   ├── config.py
+│   └── template.py
+└── usecases/
+    └── __init__.py
+```
 
 ## Проверки
 

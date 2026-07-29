@@ -19,5 +19,7 @@ service_port:
   type: int
   default: 8000
 
+_templates_suffix: ""
+
 _copy_without_render:
   - "*.lock"
