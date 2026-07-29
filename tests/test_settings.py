@@ -12,6 +12,9 @@ app:
   host: 127.0.0.1
   port: 9000
   config_template_path: config.template.yaml
+logging:
+  level: DEBUG
+  serialize: false
 """
 
 
@@ -23,6 +26,7 @@ def test_loads_nested_yaml(tmp_path: Path) -> None:
 
     assert config.app.name == "test"
     assert config.app.port == 9000
+    assert config.logging.level == "DEBUG"
 
 
 def test_environment_variables_do_not_override_yaml(

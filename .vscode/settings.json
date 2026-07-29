@@ -22,7 +22,6 @@
       "source.fixAll.biome": "explicit",
       "source.organizeImports.biome": "explicit"
     },
-    "editor.defaultFormatter": "biomejs.biome"
   },
   "[javascriptreact]": {
     "editor.formatOnSave": true,
@@ -30,7 +29,6 @@
       "source.fixAll.biome": "explicit",
       "source.organizeImports.biome": "explicit"
     },
-    "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
     "editor.formatOnSave": true,

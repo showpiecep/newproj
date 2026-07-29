@@ -8,9 +8,9 @@ config:
 	@chmod 600 config.yaml
 
 run: config
-	uv run uvicorn {{ project_slug }}.main:app --reload --port {{ service_port }}
+	uv run python -m {{ project_slug }}.main
 
-test:
+test: config
 	uv run pytest
 
 lint:

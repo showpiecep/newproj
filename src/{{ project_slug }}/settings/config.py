@@ -10,6 +10,7 @@ from pydantic_settings import (
 
 from .app import AppSettings
 from .base import Base
+from .logging import LoggingSettings
 
 
 class Config(Base):
@@ -23,6 +24,7 @@ class Config(Base):
     )
 
     app: AppSettings
+    logging: LoggingSettings = LoggingSettings()
 
     @classmethod
     def settings_customise_sources(
