@@ -137,4 +137,34 @@ printf '\nSmoke Project\n1\nn\n' |
     'source "$HOME/.zshrc"; newproj' |
   grep -q 'Создание проекта отменено.'
 
+test -f "$TEST_HOME/.local/share/newproj/uninstall.sh"
+
+# Чужой шаблон рядом обязан пережить удаление.
+mkdir -p "$TEST_HOME/templates/own-template"
+printf 'project_name:\n  type: str\n' >"$TEST_HOME/templates/own-template/copier.yml"
+
+env \
+  HOME="$TEST_HOME" \
+  NEWPROJ_TEMPLATES_DIR="$TEST_HOME/templates" \
+  NEWPROJ_INSTALL_DIR="$TEST_HOME/.local/share/newproj" \
+  NEWPROJ_RC_FILE="$TEST_HOME/.zshrc" \
+  sh "$TEST_HOME/.local/share/newproj/uninstall.sh" >/dev/null
+
+test ! -e "$TEST_HOME/templates/$TEMPLATE_NAME"
+test ! -e "$TEST_HOME/.local/share/newproj"
+test -f "$TEST_HOME/templates/own-template/copier.yml"
+test "$(grep -c 'newproj' "$TEST_HOME/.zshrc")" -eq 0
+grep -q '^# Existing user configuration$' "$TEST_HOME/.zshrc"
+zsh -n "$TEST_HOME/.zshrc"
+
+# Повторное удаление не должно падать.
+env \
+  HOME="$TEST_HOME" \
+  NEWPROJ_TEMPLATES_DIR="$TEST_HOME/templates" \
+  NEWPROJ_INSTALL_DIR="$TEST_HOME/.local/share/newproj" \
+  NEWPROJ_RC_FILE="$TEST_HOME/.zshrc" \
+  sh "$REPOSITORY_ROOT/uninstall.sh" >/dev/null
+
+test -f "$TEST_HOME/templates/own-template/copier.yml"
+
 echo "newproj installer smoke-test passed"

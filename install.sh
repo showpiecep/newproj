@@ -200,6 +200,8 @@ SOURCE_DIR="$1"
   fail "archive does not contain a templates directory"
 [ -f "$SOURCE_DIR/installer/newproj.zsh" ] ||
   fail "archive does not contain installer/newproj.zsh"
+[ -f "$SOURCE_DIR/uninstall.sh" ] ||
+  fail "archive does not contain uninstall.sh"
 
 AVAILABLE_TEMPLATES=""
 for candidate in "$SOURCE_DIR"/templates/*; do
@@ -269,6 +271,14 @@ cp "$SOURCE_DIR/installer/newproj.zsh" "$NEW_SHELL_FILE"
 zsh -n "$NEW_SHELL_FILE" || fail "newproj.zsh is not valid Zsh"
 mv "$NEW_SHELL_FILE" "$INSTALL_DIR/newproj.zsh"
 
+# Копия деинсталлятора рядом с интеграцией: удаление не должно зависеть от
+# доступности репозитория и совпадает по версии с тем, что установлено.
+NEW_UNINSTALL_FILE="$INSTALL_DIR/.uninstall.sh.new.$$"
+cp "$SOURCE_DIR/uninstall.sh" "$NEW_UNINSTALL_FILE"
+sh -n "$NEW_UNINSTALL_FILE" || fail "uninstall.sh is not valid POSIX sh"
+chmod +x "$NEW_UNINSTALL_FILE"
+mv "$NEW_UNINSTALL_FILE" "$INSTALL_DIR/uninstall.sh"
+
 for name in $SELECTED_TEMPLATES; do
   target="$TEMPLATES_DIR/$name"
 
@@ -324,3 +334,5 @@ else
   say "  source \"$RC_FILE\""
   say "  newproj"
 fi
+say
+say "To remove everything later: sh \"$INSTALL_DIR/uninstall.sh\""

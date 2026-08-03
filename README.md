@@ -33,6 +33,24 @@ newproj
 Требуется Zsh и `copier` либо `uvx` в `PATH` (`uvx` входит в
 [uv](https://docs.astral.sh/uv/)).
 
+## Удаление
+
+```bash
+sh ~/.local/share/newproj/uninstall.sh
+```
+
+Копия деинсталлятора кладётся рядом с shell-интеграцией при установке, поэтому
+сеть для удаления не нужна. Тот же скрипт доступен и по HTTPS:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/showpiecep/newproj/main/uninstall.sh | sh
+```
+
+Удаляются только каталоги с меткой `.newproj-managed`, блок из `~/.zshrc` и сама
+shell-интеграция. Ваши собственные шаблоны в `~/templates`, созданные проекты и
+резервные копии `~/.zshrc` остаются на месте.
+
 ## Как работает `newproj`
 
 Команда спрашивает, где создать проект, как его назвать, и показывает список
@@ -55,10 +73,11 @@ newproj
 ## Структура репозитория
 
 ```text
-templates/<имя>/     Copier-шаблоны, по одному каталогу на шаблон
+templates/<имя>/      Copier-шаблоны, по одному каталогу на шаблон
 installer/newproj.zsh Функция newproj для Zsh
 installer/            Сборка релиза и smoke-тест установщика
 install.sh            Установщик, запускаемый через curl | sh
+uninstall.sh          Деинсталлятор, копируется в каталог установки
 ```
 
 ## Как добавить шаблон
