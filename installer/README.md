@@ -4,7 +4,7 @@
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/my-project-template/main/install.sh |
+  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
   sh
 ```
 
@@ -26,7 +26,7 @@ curl --proto '=https' --tlsv1.2 -LsSf \
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/my-project-template/v0.1.0/install.sh |
+  https://raw.githubusercontent.com/showpiecep/newproj/v0.1.0/install.sh |
   env NEWPROJ_VERSION=v0.1.0 sh
 ```
 
@@ -34,7 +34,7 @@ curl --proto '=https' --tlsv1.2 -LsSf \
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/my-project-template/main/install.sh |
+  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
   env NEWPROJ_TEMPLATES=fastapi-yaml sh
 ```
 

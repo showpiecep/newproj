@@ -4,7 +4,7 @@ set -eu
 
 PROGRAM_NAME="newproj"
 ARCHIVE_NAME="newproj-templates.tar.gz"
-DEFAULT_REPOSITORY_URL="https://github.com/showpiecep/my-project-template"
+DEFAULT_REPOSITORY_URL="https://github.com/showpiecep/newproj"
 
 REPOSITORY_URL="${NEWPROJ_REPOSITORY_URL:-$DEFAULT_REPOSITORY_URL}"
 VERSION="${NEWPROJ_VERSION:-latest}"
