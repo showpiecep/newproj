@@ -1,7 +1,16 @@
-.PHONY: init config run test lint format check
+.PHONY: init config hooks run test lint format check
 
 init:
 	uv sync --all-groups
+	@$(MAKE) hooks
+
+hooks:
+	@if [ -d .git ]; then \
+		uv run pre-commit install; \
+	else \
+		echo "pre-commit: пропущено, .git не найден."; \
+		echo "Выполните git init, затем make hooks."; \
+	fi
 
 config:
 	@test -f config.yaml || cp config.template.yaml config.yaml
