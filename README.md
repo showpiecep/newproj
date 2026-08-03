@@ -1,96 +1,84 @@
-# {{ project_name }}
+# newproj
 
-FastAPI-шаблон с типизированной конфигурацией из YAML. `.env` не используется:
-вложенность остаётся обычной YAML-вложенностью, а вся структура проверяется
-Pydantic при старте приложения.
+Набор [Copier](https://copier.readthedocs.io/)-шаблонов проектов и команда
+`newproj`, которая создаёт новый проект из выбранного шаблона в интерактивном
+режиме.
 
-## Быстрый старт
+## Установка
 
 ```bash
-make init
-make config
-# Отредактируйте config.yaml
-make run
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/showpiecep/my-project-template/main/install.sh |
+  sh
 ```
 
-После запуска доступны API на <http://127.0.0.1:{{ service_port }} и документация
-на <http://127.0.0.1:{{ service_port }}/docs>.
+Установщик скачивает архив релиза, проверяет его SHA-256, раскладывает шаблоны в
+`~/templates/<шаблон>` и подключает команду `newproj` через управляемый блок в
+`~/.zshrc`:
 
-## Как устроена конфигурация
-
-`config.template.yaml` коммитится и описывает полное дерево настроек.
-`config.yaml` создаётся локально, содержит реальные секреты и игнорируется Git.
-Путь к другому YAML можно передать приложению программно:
-
-```python
-config = Config.load(Path("/run/secrets/service-config.yaml"))
-app = Application(config).create_app()
+```zsh
+# >>> newproj >>>
+NEWPROJ_TEMPLATES_DIR='/Users/you/templates'
+source '/Users/you/.local/share/newproj/newproj.zsh'
+# <<< newproj <<<
 ```
 
-Такой явный путь удобен для Docker/Kubernetes: YAML монтируется как один secret
-volume без преобразования вложенных ключей в переменные окружения.
+После установки:
 
-`Config` — мастер-модель, содержащая вложенные секции настроек. Каждая новая область
-конфигурации получает отдельный модуль в пакете `settings`, после чего добавляется
-полем в `Config`.
-
-При каждом запуске bootstrap строит актуальный `config.template.yaml`
-непосредственно из Pydantic-моделей до чтения пользовательского конфига. Благодаря
-этому структура шаблона не расходится со структурой кода даже тогда, когда старый
-`config.yaml` уже не проходит валидацию. После загрузки конфига bootstrap также
-учитывает путь из поля `app.config_template_path`.
-
-При запуске через `make run` Uvicorn получает `host` и `port` из `config.yaml`.
-
-## Логирование
-
-Прикладной код использует Loguru напрямую:
-
-```python
-from loguru import logger
-
-logger.info("Application event")
+```bash
+source ~/.zshrc
+newproj
 ```
 
-Уровень и JSON-сериализация задаются секцией `logging` в `config.yaml`.
-Логи Uvicorn, FastAPI и сторонних библиотек не перехватываются и продолжают
-работать через собственные механизмы.
+Требуется Zsh и `copier` либо `uvx` в `PATH` (`uvx` входит в
+[uv](https://docs.astral.sh/uv/)).
 
-## Состояние приложения
+## Как работает `newproj`
 
-`app.state` представлен типизированным `ApplicationState`. Когда в lifespan
-появляется новый общий ресурс, его поле добавляется в `application/state.py`.
-После этого обращения к состоянию получают автодополнение и статическую проверку
-типов вместо неявных динамических атрибутов.
+Команда спрашивает, где создать проект, как его назвать, и показывает список
+шаблонов, найденных в `$NEWPROJ_TEMPLATES_DIR`. Дальше запускается
+`copier copy`, который задаёт остальные вопросы шаблона, и оболочка переходит в
+созданный проект:
 
-Исходный пакет намеренно остаётся минимальным:
+`каталог -> имя проекта -> выбор шаблона -> copier copy -> cd в новый проект`
+
+Список шаблонов строится из каталогов с файлом `copier.yml`, поэтому в
+`~/templates` можно положить собственный шаблон рядом с установленными — он
+появится в меню без изменения кода.
+
+## Шаблоны
+
+| Шаблон | Назначение |
+|---|---|
+| [fastapi-yaml](templates/fastapi-yaml/) | FastAPI-сервис с типизированной конфигурацией из YAML вместо `.env`, Loguru, типизированным `app.state` и настроенными ruff/pytest/pre-commit |
+
+## Структура репозитория
 
 ```text
-src/{{ project_slug }}/
-├── main.py
-├── application/
-│   ├── app.py
-│   ├── bootstrap.py
-│   ├── state.py
-│   └── routers/
-│       └── __init__.py
-├── settings/
-│   ├── app.py
-│   ├── base.py
-│   ├── config.py
-│   ├── logging.py
-│   └── template.py
-├── observability/
-│   └── logging.py
-└── usecases/
-    └── __init__.py
+templates/<имя>/     Copier-шаблоны, по одному каталогу на шаблон
+installer/newproj.zsh Функция newproj для Zsh
+installer/            Сборка релиза и smoke-тест установщика
+install.sh            Установщик, запускаемый через curl | sh
 ```
 
-## Проверки
+## Как добавить шаблон
+
+1. Создать каталог `templates/<имя>` с файлом `copier.yml`.
+2. Описать в нём вопросы шаблона и исключить из генерации служебные файлы через
+   `_exclude` (как минимум `copier.yml` и `.newproj-managed`).
+3. Проверить генерацию: `copier copy templates/<имя> /tmp/probe --trust`.
+4. Добавить строку в таблицу шаблонов выше.
+
+Отдельно править установщик не нужно: он раскладывает все каталоги из
+`templates/`, а `newproj` находит их по наличию `copier.yml`.
+
+## Выпуск версии
 
 ```bash
-make test
-make lint
-make format
-make check
+sh installer/test-install.sh
+git tag v0.1.0 && git push origin v0.1.0
 ```
+
+Тег `v*` запускает workflow, который собирает `newproj-templates.tar.gz` с
+контрольной суммой и публикует их в GitHub Release. Подробности установщика и
+переменные окружения — в [installer/README.md](installer/README.md).

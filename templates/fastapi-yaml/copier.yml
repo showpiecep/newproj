@@ -23,3 +23,20 @@ _templates_suffix: ""
 
 _copy_without_render:
   - "*.lock"
+
+_exclude:
+  - ".git"
+  - ".git/**"
+  - "copier.yml"
+  - "copier.yaml"
+  - ".newproj-managed"
+  # Артефакты локальной работы с шаблоном не должны попадать в новый проект.
+  - "config.yaml"
+  - ".venv"
+  - ".venv/**"
+  - "__pycache__"
+  - "__pycache__/**"
+  - ".pytest_cache"
+  - ".pytest_cache/**"
+  - ".ruff_cache"
+  - ".ruff_cache/**"

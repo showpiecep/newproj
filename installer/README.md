@@ -1,0 +1,94 @@
+# Установщик newproj
+
+Установка шаблонов и команды `newproj` одной командой:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/showpiecep/my-project-template/main/install.sh |
+  sh
+```
+
+Установщик:
+
+- скачивает архив релиза только по HTTPS;
+- проверяет SHA-256 архива;
+- устанавливает каждый шаблон из архива в `~/templates/<шаблон>` и помечает его
+  файлом `.newproj-managed`;
+- устанавливает функцию в `~/.local/share/newproj/newproj.zsh`;
+- добавляет в `~/.zshrc` только небольшой управляемый блок `source`;
+- проверяет получившийся rc-файл через `zsh -n`;
+- создаёт резервную копию rc-файла;
+- безопасно обновляет только ранее управляемые установки: при конфликте хотя бы
+  с одним неуправляемым каталогом не изменяется ничего, а неудачная подмена
+  откатывает все шаблоны текущего запуска.
+
+Установка конкретной версии:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/showpiecep/my-project-template/v0.1.0/install.sh |
+  env NEWPROJ_VERSION=v0.1.0 sh
+```
+
+Установка части шаблонов:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/showpiecep/my-project-template/main/install.sh |
+  env NEWPROJ_TEMPLATES=fastapi-yaml sh
+```
+
+Доступные настройки:
+
+| Переменная | Назначение |
+|---|---|
+| `NEWPROJ_VERSION` | Версия GitHub Release, по умолчанию `latest` |
+| `NEWPROJ_TEMPLATES` | Список шаблонов через запятую, по умолчанию все из архива |
+| `NEWPROJ_TEMPLATES_DIR` | Каталог шаблонов, по умолчанию `~/templates` |
+| `NEWPROJ_INSTALL_DIR` | Каталог shell-интеграции |
+| `NEWPROJ_RC_FILE` | Изменяемый Zsh rc-файл |
+| `NEWPROJ_NO_MODIFY_RC=1` | Не изменять shell profile |
+| `NEWPROJ_REPOSITORY_URL` | URL репозитория и релизов |
+| `NEWPROJ_ARCHIVE_URL` | Явный URL архива для тестов или зеркала |
+| `NEWPROJ_CHECKSUM` | Ожидаемый SHA-256 без загрузки checksum-файла |
+
+## Проверка
+
+Smoke-тест работает в изолированном временном `HOME` и не изменяет
+пользовательские файлы:
+
+```bash
+sh installer/test-install.sh
+```
+
+Тест собирает архив из рабочей копии и проверяет: отсутствие `.git` и
+`config.yaml` в архиве, первую установку, повторное обновление, отсутствие
+дублирующихся блоков в `.zshrc`, загрузку функции, выборочную установку через
+`NEWPROJ_TEMPLATES`, отказ при неизвестном имени шаблона и отказ перезаписывать
+неуправляемый шаблон.
+
+## Сборка релиза
+
+После коммита изменений создать архив и checksum:
+
+```bash
+sh installer/build-release.sh v0.1.0
+```
+
+Скрипт создаст:
+
+```text
+dist/v0.1.0/newproj-templates.tar.gz
+dist/v0.1.0/newproj-templates.tar.gz.sha256
+```
+
+Оба файла необходимо прикрепить к GitHub Release с тегом `v0.1.0`; workflow
+[release-newproj.yml](../.github/workflows/release-newproj.yml) делает это
+автоматически при push тега `v*`.
+
+## Разработка шаблонов
+
+Установщик отказывается перезаписывать каталог без `.newproj-managed`, поэтому
+рабочую копию этого репозитория нельзя держать в `~/templates` под именем
+устанавливаемого шаблона. Держите её в отдельном каталоге, например
+`~/src/newproj`, а установленные шаблоны — в `~/templates`.
