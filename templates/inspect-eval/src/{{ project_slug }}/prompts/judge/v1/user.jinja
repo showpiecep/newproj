@@ -1,0 +1,15 @@
+{# Copier рендерит файлы шаблона: Jinja проекта защищена raw-блоком. #}
+{% raw %}Вопрос пользователя:
+{{ question }}
+
+Ответ сервиса:
+{{ answer }}
+{% if reference %}
+Эталонный ответ:
+{{ reference }}
+{% endif %}
+Критерии:
+{% for criterion in criteria %}
+- {{ criterion.name }}: {{ criterion.description }}
+{% endfor %}
+{% endraw %}

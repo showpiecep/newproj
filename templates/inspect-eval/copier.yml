@@ -1,0 +1,46 @@
+project_name:
+  type: str
+  help: "Название проекта"
+  default: "My Eval Service"
+
+project_slug:
+  type: str
+  default: "{{ project_name.lower().replace(' ', '_').replace('-', '_') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Имя пакета должно начинаться с буквы и содержать только a-z, 0-9 и _
+    {% endif %}
+
+python_version:
+  type: str
+  default: "3.13"
+
+service_under_test_url:
+  type: str
+  help: "URL тестируемого сервиса (можно поменять позже в configs/runs/)"
+  default: "http://127.0.0.1:8000/api/answer"
+
+_templates_suffix: ""
+
+# `_copy_without_render` в Copier 9 не существует — ключ молча игнорируется.
+# Jinja будущего проекта (шаблоны промптов) защищена блоками `{% raw %}` в самих
+# файлах; при добавлении новых промптов в шаблон делать так же.
+
+_exclude:
+  - ".git"
+  - ".git/**"
+  - "copier.yml"
+  - "copier.yaml"
+  - ".newproj-managed"
+  # Артефакты локальной работы с шаблоном не должны попадать в новый проект.
+  - "config.yaml"
+  - "logs"
+  - "logs/**"
+  - ".venv"
+  - ".venv/**"
+  - "__pycache__"
+  - "__pycache__/**"
+  - ".pytest_cache"
+  - ".pytest_cache/**"
+  - ".ruff_cache"
+  - ".ruff_cache/**"
