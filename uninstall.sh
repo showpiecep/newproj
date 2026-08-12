@@ -183,7 +183,8 @@ fi
 
 if [ "$REMOVE_SHELL_INTEGRATION" = "1" ]; then
   say
-  say "Run 'unset -f newproj' or restart the shell to drop the loaded function."
+  say "Restart the shell to drop the loaded functions, or unset them:"
+  say "  unset -f newproj \$(typeset +f | grep '^_newproj_')"
 else
   say
   say "Shell integration kept: other newproj templates are still installed."
