@@ -1,0 +1,60 @@
+name: Publish docs
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Публикация на Pages одна на репозиторий: параллельные сборки перезаписывали бы
+# друг друга. Тег и push в main приходят почти одновременно, поэтому очередь
+# нужна, а отменять уже идущую публикацию нельзя.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # git-cliff собирает changelog из истории и тегов: неполный клон дал
+          # бы усечённый changelog вместо ошибки.
+          fetch-depth: 0
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Generate changelog
+        run: pipx run git-cliff --config cliff.toml --output docs/_changelog.md
+
+      - name: Render site
+        run: quarto render docs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

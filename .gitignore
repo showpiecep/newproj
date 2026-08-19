@@ -223,3 +223,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.DS_Store
+
+# Quarto
+docs/_site/
+docs/.quarto/
+
+# Changelog собирается из истории коммитов при сборке сайта
+docs/_changelog.md

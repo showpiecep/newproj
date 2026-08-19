@@ -4,6 +4,8 @@
 `newproj`, которая создаёт новый проект из выбранного шаблона в интерактивном
 режиме.
 
+Документация и changelog: <https://showpiecep.github.io/newproj/>
+
 ## Установка
 
 ```bash
@@ -128,6 +130,8 @@ installer/newproj.zsh Функция newproj для Zsh
 installer/            Сборка релиза и smoke-тест установщика
 install.sh            Установщик, запускаемый через curl | sh
 uninstall.sh          Деинсталлятор, копируется в каталог установки
+docs/                 Сайт документации на Quarto
+cliff.toml            Сборка changelog из истории коммитов
 ```
 
 ## Как добавить шаблон
@@ -148,6 +152,15 @@ sh installer/test-install.sh
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Тег `v*` запускает workflow, который собирает `newproj-templates.tar.gz` с
-контрольной суммой и публикует их в GitHub Release. Подробности установщика и
-переменные окружения — в [installer/README.md](installer/README.md).
+Тег `v*` запускает два workflow: первый собирает `newproj-templates.tar.gz` с
+контрольной суммой и публикует их в GitHub Release, второй пересобирает сайт с
+обновлённым changelog. Подробности установщика и переменные окружения — в
+[installer/README.md](installer/README.md).
+
+Сообщения коммитов обязаны быть conventional commits: changelog собирается из
+истории, отдельного файла в репозитории нет. Собрать сайт локально:
+
+```bash
+uvx git-cliff --config cliff.toml --output docs/_changelog.md
+quarto preview docs
+```

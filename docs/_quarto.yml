@@ -1,0 +1,42 @@
+project:
+  type: website
+  output-dir: _site
+
+lang: ru
+
+website:
+  title: "newproj"
+  description: "Copier-шаблоны проектов и команда newproj"
+  site-url: "https://showpiecep.github.io/newproj/"
+  repo-url: "https://github.com/showpiecep/newproj"
+  repo-branch: main
+  repo-subdir: docs
+  repo-actions: [source, issue]
+  navbar:
+    pinned: true
+    left:
+      - href: index.qmd
+        text: Обзор
+      - href: templates.qmd
+        text: Шаблоны
+      - href: contributing.qmd
+        text: Разработка
+      - href: changelog.qmd
+        text: Changelog
+    right:
+      - icon: github
+        href: "https://github.com/showpiecep/newproj"
+        aria-label: GitHub
+  page-footer:
+    center: "Changelog собирается из истории коммитов, страницы — из docs/ этого же репозитория."
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    toc-title: На странице
+    css: styles.css
+    code-copy: true
+    anchor-sections: true

@@ -1,0 +1,6 @@
+# Релизный архив собирается через git archive и попадает на машины
+# пользователей: сайт, конфиг changelog и CI туда не нужны.
+docs/ export-ignore
+cliff.toml export-ignore
+.gitattributes export-ignore
+.github/ export-ignore
