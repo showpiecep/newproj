@@ -95,6 +95,25 @@ strip_managed_block() {
   ' "$1"
 }
 
+# Пустые строки в хвосте убираются перед дописыванием блока: иначе каждая
+# повторная установка добавляла бы ещё одну пустую строку, rc-файл отличался бы
+# от прежнего и обновление плодило бы резервные копии.
+strip_trailing_blank_lines() {
+  awk '
+    /^[[:space:]]*$/ {
+      blank++
+      next
+    }
+    {
+      for (i = 0; i < blank; i++) {
+        print ""
+      }
+      blank = 0
+      print
+    }
+  ' "$1"
+}
+
 # Имена шаблонов приходят из архива и подставляются в пути, поэтому набор
 # допустимых символов ограничен явно.
 check_template_name() {
@@ -129,6 +148,11 @@ cleanup() {
   for cleanup_name in $STAGED_TEMPLATES; do
     rm -rf "$(staged_path "$cleanup_name")"
   done
+  rm -f \
+    "$INSTALL_DIR/.newproj.zsh.new.$$" \
+    "$INSTALL_DIR/.uninstall.sh.new.$$" \
+    "$INSTALL_DIR/.install.sh.new.$$" \
+    "$INSTALL_DIR/.state.new.$$"
 }
 
 # Откат возвращает все шаблоны, уже подменённые в этом запуске.
@@ -151,6 +175,7 @@ require_command awk
 require_command sed
 require_command zsh
 require_command mktemp
+require_command cmp
 
 if [ -n "${NEWPROJ_ARCHIVE_URL:-}" ]; then
   ARCHIVE_URL="$NEWPROJ_ARCHIVE_URL"
@@ -170,6 +195,7 @@ TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/newproj-install.XXXXXX")"
 ARCHIVE_PATH="$TEMP_DIR/$ARCHIVE_NAME"
 EXTRACT_DIR="$TEMP_DIR/extracted"
 RC_CANDIDATE="$TEMP_DIR/zshrc"
+RC_STRIPPED="$TEMP_DIR/zshrc.stripped"
 
 mkdir -p "$EXTRACT_DIR"
 
@@ -202,6 +228,21 @@ SOURCE_DIR="$1"
   fail "archive does not contain installer/newproj.zsh"
 [ -f "$SOURCE_DIR/uninstall.sh" ] ||
   fail "archive does not contain uninstall.sh"
+[ -f "$SOURCE_DIR/install.sh" ] ||
+  fail "archive does not contain install.sh"
+
+# Реальная версия читается из имени корневого каталога архива: build-release.sh
+# задаёт префикс newproj-templates-<версия>. Иначе при установке по умолчанию в
+# состоянии осталась бы строка latest, и сравнивать с релизом было бы нечего.
+ARCHIVE_ROOT_NAME="$(basename "$SOURCE_DIR")"
+case "$ARCHIVE_ROOT_NAME" in
+  newproj-templates-?*)
+    RESOLVED_VERSION="${ARCHIVE_ROOT_NAME#newproj-templates-}"
+    ;;
+  *)
+    RESOLVED_VERSION="$VERSION"
+    ;;
+esac
 
 AVAILABLE_TEMPLATES=""
 for candidate in "$SOURCE_DIR"/templates/*; do
@@ -242,21 +283,24 @@ for name in $SELECTED_TEMPLATES; do
   rm -rf "$staged"
   cp -R "$SOURCE_DIR/templates/$name" "$staged"
   printf 'version=%s\nrepository=%s\ntemplate=%s\n' \
-    "$VERSION" "$REPOSITORY_URL" "$name" >"$staged/.newproj-managed"
+    "$RESOLVED_VERSION" "$REPOSITORY_URL" "$name" >"$staged/.newproj-managed"
   STAGED_TEMPLATES="$STAGED_TEMPLATES $name"
 done
 
 if [ "$NO_MODIFY_RC" != "1" ]; then
   if [ -f "$RC_FILE" ]; then
-    strip_managed_block "$RC_FILE" >"$RC_CANDIDATE" ||
+    strip_managed_block "$RC_FILE" >"$RC_STRIPPED" ||
       fail "invalid managed block in $RC_FILE"
   else
-    : >"$RC_CANDIDATE"
+    : >"$RC_STRIPPED"
   fi
+
+  strip_trailing_blank_lines "$RC_STRIPPED" >"$RC_CANDIDATE"
 
   {
     printf '\n%s\n' "$START_MARKER"
     printf 'NEWPROJ_TEMPLATES_DIR=%s\n' "$(quote_zsh "$TEMPLATES_DIR")"
+    printf 'NEWPROJ_INSTALL_DIR=%s\n' "$(quote_zsh "$INSTALL_DIR")"
     printf 'source %s\n' "$(quote_zsh "$INSTALL_DIR/newproj.zsh")"
     printf '%s\n' "$END_MARKER"
   } >>"$RC_CANDIDATE"
@@ -278,6 +322,14 @@ cp "$SOURCE_DIR/uninstall.sh" "$NEW_UNINSTALL_FILE"
 sh -n "$NEW_UNINSTALL_FILE" || fail "uninstall.sh is not valid POSIX sh"
 chmod +x "$NEW_UNINSTALL_FILE"
 mv "$NEW_UNINSTALL_FILE" "$INSTALL_DIR/uninstall.sh"
+
+# Копия установщика: ею запускается newproj update. Установщик из свежего
+# архива заменяет сам себя, поэтому обновление подхватывает и правки установки.
+NEW_INSTALL_FILE="$INSTALL_DIR/.install.sh.new.$$"
+cp "$SOURCE_DIR/install.sh" "$NEW_INSTALL_FILE"
+sh -n "$NEW_INSTALL_FILE" || fail "install.sh is not valid POSIX sh"
+chmod +x "$NEW_INSTALL_FILE"
+mv "$NEW_INSTALL_FILE" "$INSTALL_DIR/install.sh"
 
 for name in $SELECTED_TEMPLATES; do
   target="$TEMPLATES_DIR/$name"
@@ -302,7 +354,10 @@ for name in $SWAPPED_TEMPLATES; do
   rm -rf "$(backup_path "$name")"
 done
 
-if [ "$NO_MODIFY_RC" != "1" ]; then
+# Обновление запускает установщик повторно, поэтому rc-файл трогается только
+# когда управляемый блок действительно изменился: иначе каждая установка
+# оставляла бы ещё одну резервную копию.
+if [ "$NO_MODIFY_RC" != "1" ] && ! cmp -s "$RC_CANDIDATE" "$RC_FILE"; then
   mkdir -p "$(dirname "$RC_FILE")"
   if [ -f "$RC_FILE" ]; then
     RC_BACKUP_BASE="$RC_FILE.newproj-backup.$(date +%Y%m%d%H%M%S)"
@@ -318,8 +373,26 @@ if [ "$NO_MODIFY_RC" != "1" ]; then
   mv "$RC_CANDIDATE" "$RC_FILE"
 fi
 
+# Состояние установки: по нему newproj update повторяет запуск с теми же
+# настройками, а проверка обновлений знает, с какой версией сравнивать.
+NEW_STATE_FILE="$INSTALL_DIR/.state.new.$$"
+{
+  printf 'version=%s\n' "$RESOLVED_VERSION"
+  printf 'repository=%s\n' "$REPOSITORY_URL"
+  printf 'templates_dir=%s\n' "$TEMPLATES_DIR"
+  printf 'install_dir=%s\n' "$INSTALL_DIR"
+  printf 'rc_file=%s\n' "$RC_FILE"
+  printf 'no_modify_rc=%s\n' "$NO_MODIFY_RC"
+  printf 'requested_templates=%s\n' "$REQUESTED_TEMPLATES"
+  printf 'installed_templates=%s\n' "${SELECTED_TEMPLATES# }"
+} >"$NEW_STATE_FILE"
+mv "$NEW_STATE_FILE" "$INSTALL_DIR/state"
+
+# Кеш проверки относится к прежней версии: после установки он заведомо устарел.
+rm -f "$INSTALL_DIR/update-check" "$INSTALL_DIR/update-notified"
+
 say
-say "newproj installed successfully"
+say "newproj $RESOLVED_VERSION installed successfully"
 say "Templates directory: $TEMPLATES_DIR"
 for name in $SELECTED_TEMPLATES; do
   say "  $name"
@@ -335,4 +408,5 @@ else
   say "  newproj"
 fi
 say
+say "To update later: newproj update"
 say "To remove everything later: sh \"$INSTALL_DIR/uninstall.sh\""

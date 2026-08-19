@@ -157,7 +157,13 @@ for name in $SELECTED_TEMPLATES; do
 done
 
 if [ "$REMOVE_SHELL_INTEGRATION" = "1" ] && [ -d "$INSTALL_DIR" ]; then
-  rm -f "$INSTALL_DIR/newproj.zsh" "$INSTALL_DIR/uninstall.sh"
+  rm -f \
+    "$INSTALL_DIR/newproj.zsh" \
+    "$INSTALL_DIR/uninstall.sh" \
+    "$INSTALL_DIR/install.sh" \
+    "$INSTALL_DIR/state" \
+    "$INSTALL_DIR/update-check" \
+    "$INSTALL_DIR/update-notified"
   rmdir "$INSTALL_DIR" 2>/dev/null ||
     say "Kept $INSTALL_DIR: directory is not empty"
 fi
@@ -184,6 +190,7 @@ fi
 if [ "$REMOVE_SHELL_INTEGRATION" = "1" ]; then
   say
   say "Restart the shell to drop the loaded functions, or unset them:"
+  say "  add-zsh-hook -d precmd _newproj_update_precmd"
   say "  unset -f newproj \$(typeset +f | grep '^_newproj_')"
 else
   say
