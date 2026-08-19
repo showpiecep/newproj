@@ -152,9 +152,9 @@ sh installer/test-install.sh
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Тег `v*` запускает два workflow: первый собирает `newproj-templates.tar.gz` с
-контрольной суммой и публикует их в GitHub Release, второй пересобирает сайт с
-обновлённым changelog. Подробности установщика и переменные окружения — в
+Тег `v*` запускает workflow, который собирает `newproj-templates.tar.gz` с
+контрольной суммой и публикует их в GitHub Release. По его завершении
+пересобирается сайт с обновлённым changelog. Подробности установщика и переменные окружения — в
 [installer/README.md](installer/README.md).
 
 Сообщения коммитов обязаны быть conventional commits: changelog собирается из

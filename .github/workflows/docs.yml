@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
+  # После публикации релиза, а не по самому тегу: окружение github-pages
+  # разрешает деплой только с main, и запуск на ref тега оно отклоняет. Здесь
+  # запуск идёт в контексте main, а новый тег уже виден в истории, поэтому
+  # changelog собирается с ним.
+  workflow_run:
+    workflows:
+      - Release newproj installer
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -14,8 +21,8 @@ permissions:
   id-token: write
 
 # Публикация на Pages одна на репозиторий: параллельные сборки перезаписывали бы
-# друг друга. Тег и push в main приходят почти одновременно, поэтому очередь
-# нужна, а отменять уже идущую публикацию нельзя.
+# друг друга. Push в main и завершение релиза приходят почти одновременно,
+# поэтому очередь нужна, а отменять уже идущую публикацию нельзя.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -23,6 +30,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # Неудачный релиз не должен публиковать changelog с версией, которой нет.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Check out repository
