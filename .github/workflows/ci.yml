@@ -1,0 +1,92 @@
+name: Test newproj
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - macos-14
+          - windows-2022
+        python:
+          - "3.11"
+          - "3.13"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+
+      - name: Run unit tests
+        run: uv run --locked --python ${{ matrix.python }} pytest
+
+      - name: Check Python code
+        run: uv run --locked --python ${{ matrix.python }} ruff check src tests
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Test POSIX installer
+        shell: bash
+        run: |
+          wheel="$(find dist -name '*.whl' -type f -print -quit)"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            runner_temp="$(cygpath -u "$RUNNER_TEMP")"
+          else
+            runner_temp="$RUNNER_TEMP"
+          fi
+          tool_bin="$runner_temp/newproj-bin"
+          NEWPROJ_SOURCE="$wheel" \
+            UV_TOOL_DIR="$runner_temp/newproj-tools" \
+            UV_TOOL_BIN_DIR="$tool_bin" \
+            sh install.sh
+
+      - name: Smoke-test in Bash and Git Bash
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            runner_temp="$(cygpath -u "$RUNNER_TEMP")"
+          else
+            runner_temp="$RUNNER_TEMP"
+          fi
+          tool_bin="$runner_temp/newproj-bin"
+          project_root="$runner_temp/newproj-projects"
+          export PATH="$tool_bin:$PATH"
+          newproj --version
+          newproj list
+          newproj create \
+            --parent "$project_root" \
+            --name smoke_project \
+            --template fastapi-yaml \
+            --defaults \
+            --non-interactive
+          test -f "$project_root/smoke_project/pyproject.toml"
+
+      - name: Test PowerShell installer and executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:NEWPROJ_SOURCE = (Get-ChildItem dist/*.whl).FullName
+          $env:UV_TOOL_DIR = "$env:RUNNER_TEMP/newproj-tools"
+          $env:UV_TOOL_BIN_DIR = "$env:RUNNER_TEMP/newproj-bin"
+          ./install.ps1
+          & "$env:RUNNER_TEMP/newproj-bin/newproj.exe" --version
+          & "$env:RUNNER_TEMP/newproj-bin/newproj.exe" list
