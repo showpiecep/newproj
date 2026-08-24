@@ -1,108 +1,90 @@
 ---
 title: newproj
-subtitle: Copier-шаблоны проектов и одна команда, которая из них создаёт проект
+subtitle: Copier-шаблоны и одна команда для macOS, Linux и Windows
 ---
 
-`newproj` — это набор [Copier](https://copier.readthedocs.io/)-шаблонов и функция
-для Zsh, которая спрашивает каталог, название и шаблон, запускает `copier copy`
-и переходит в созданный проект.
+`newproj` — отдельная кроссплатформенная CLI-команда. Она одинаково запускается
+из Zsh, Bash, Fish, Git Bash, PowerShell и `cmd`, спрашивает каталог, название и
+шаблон, затем вызывает `copier copy`.
 
 ```text
-каталог -> имя проекта -> выбор шаблона -> copier copy -> cd в новый проект
+каталог -> имя проекта -> выбор шаблона -> copier copy
 ```
 
 ## Установка
 
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
-  sh
+Установите [uv](https://docs.astral.sh/uv/getting-started/installation/), затем в
+любой оболочке выполните:
+
+```text
+uv tool install https://github.com/showpiecep/newproj/releases/latest/download/newproj-templates.tar.gz
 ```
 
-Установщик скачивает архив релиза, проверяет его SHA-256, раскладывает шаблоны
-в `~/templates/<шаблон>` и добавляет в `~/.zshrc` управляемый блок:
+Если каталог команд uv ещё не находится в `PATH`:
 
-```zsh
-# >>> newproj >>>
-NEWPROJ_TEMPLATES_DIR='/Users/you/templates'
-NEWPROJ_INSTALL_DIR='/Users/you/.local/share/newproj'
-source '/Users/you/.local/share/newproj/newproj.zsh'
-# <<< newproj <<<
+```text
+uv tool update-shell
 ```
 
-Дальше:
+Перезапустите терминал и проверьте результат:
 
-```bash
-source ~/.zshrc
-newproj
+```text
+newproj --version
+newproj list
 ```
 
-Нужны Zsh и `copier` либо `uvx` в `PATH` (`uvx` входит в
-[uv](https://docs.astral.sh/uv/)).
-
-::: {.callout-note}
-## Что установщик не делает
-
-Он не трогает каталоги без метки `.newproj-managed`, поэтому ваши собственные
-шаблоны в `~/templates` он не перезапишет, а откажется работать. Перед заменой
-rc-файла он проверяет результат через `zsh -n` и сохраняет резервную копию.
-:::
+Python отдельно ставить не обязательно: uv умеет загрузить подходящую версию.
+`newproj` не редактирует `.zshrc`, `.bashrc`, профиль PowerShell или другие
+настройки конкретной оболочки.
 
 ## Команды
 
-```bash
-newproj          # интерактивное создание проекта
-newproj list     # доступные шаблоны с описанием
-newproj update   # обновить шаблоны и саму команду
-newproj --help   # справка
+```text
+newproj                  # интерактивное создание проекта
+newproj create           # то же явно
+newproj list             # доступные шаблоны
+newproj update           # обновить программу и встроенные шаблоны
+newproj update --check   # только проверить версию
+newproj --help
 ```
 
-## Обновление
-
-```bash
-newproj update           # обновить, если вышел новый релиз
-newproj update --check   # только проверить
-newproj update --force   # переустановить текущий релиз
-```
-
-Повторно запускать `curl | sh` не нужно: установщик кладёт свою копию рядом с
-shell-интеграцией, и `newproj update` запускает её с настройками прошлой
-установки — тем же каталогом шаблонов, тем же rc-файлом и тем же набором
-шаблонов. Свежий `install.sh` приезжает внутри архива релиза и заменяет копию,
-поэтому обновляется и сам установщик.
-
-Оболочка не чаще раза в неделю проверяет в фоне, вышел ли новый релиз, и один
-раз за сессию показывает подсказку:
+Для автоматизации:
 
 ```text
-newproj: доступна версия v0.2.0, установлена v0.1.0.
-Обновить: newproj update
+newproj create --parent . --name example --template fastapi-yaml --defaults --non-interactive
 ```
 
-Проверка идёт по редиректу `/releases/latest`, без GitHub API и без токена,
-уходит в отсоединённый фон и не задерживает запуск оболочки. Частота задаётся
-переменной `NEWPROJ_UPDATE_CHECK_DAYS`, значение `0` выключает и проверку, и
-подсказку:
+CLI не может изменить текущий каталог родительской оболочки, поэтому после
+создания печатает готовую команду `cd`.
 
-```zsh
-export NEWPROJ_UPDATE_CHECK_DAYS=0
+## Шаблоны
+
+Встроенные шаблоны входят в установленный wheel и обновляются вместе с командой.
+Собственные Copier-шаблоны можно положить в `~/templates` или задать другой
+каталог через `NEWPROJ_TEMPLATES_DIR`.
+
+## Обновление и удаление
+
+```text
+newproj update
+uv tool uninstall newproj
 ```
 
-::: {.callout-important}
-## Установленным до v0.2.0 нужен один переход вручную
+Установка uv создаёт изолированное окружение для инструмента и помещает
+исполняемый файл в общий каталог команд. На Unix это обычный executable, на
+Windows — `newproj.exe`.
 
-У установок версий v0.1.x нет ни копии установщика, ни файла состояния, поэтому
-команда `newproj update` у них не появится. Достаточно один раз выполнить
-установку заново той же командой `curl | sh` — дальше всё обновляется командой.
+::: {.callout-note}
+## Переход с версий до v0.3.0
+
+Старый установщик добавлял Zsh-функцию в `~/.zshrc`. Сначала запустите сохранённый
+старый деинсталлятор `sh ~/.local/share/newproj/uninstall.sh`, затем установите
+новую CLI-версию и перезапустите терминал.
 :::
 
-## Удаление
+## Поддерживаемые платформы
 
-```bash
-sh ~/.local/share/newproj/uninstall.sh
-```
-
-Копия деинсталлятора кладётся рядом с shell-интеграцией, поэтому сеть для
-удаления не нужна. Удаляются только каталоги с меткой `.newproj-managed`, блок
-из `~/.zshrc` и сама shell-интеграция. Ваши шаблоны, созданные проекты и
-резервные копии `~/.zshrc` остаются на месте.
+Каждый pull request проверяется на `ubuntu-24.04`, `macos-14` и `windows-2022`
+с Python 3.11 и 3.13. Тесты собирают wheel, устанавливают его как uv tool и
+создают проект из встроенного шаблона. На Windows команда дополнительно
+запускается из PowerShell и Git Bash.

@@ -1,151 +1,66 @@
-# Установщик newproj
+# Установка и выпуск newproj
 
-Установка шаблонов и команды `newproj` одной командой:
+`newproj` распространяется как Python wheel с консольной командой и встроенными
+Copier-шаблонами. Изолированным окружением и размещением executable в `PATH`
+управляет uv, одинаково на macOS, Linux и Windows.
 
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
-  sh
+## Установка
+
+```text
+uv tool install https://github.com/showpiecep/newproj/releases/latest/download/newproj-templates.tar.gz
 ```
 
-Установщик:
+POSIX-загрузчик `install.sh` и PowerShell-загрузчик `install.ps1` выполняют эту
+же команду. Для локальной проверки источник можно переопределить:
 
-- скачивает архив релиза только по HTTPS;
-- проверяет SHA-256 архива;
-- устанавливает каждый шаблон из архива в `~/templates/<шаблон>` и помечает его
-  файлом `.newproj-managed`;
-- устанавливает функцию в `~/.local/share/newproj/newproj.zsh`;
-- кладёт туда же копию `install.sh` и файл `state` с версией и настройками
-  установки — ими работает `newproj update`;
-- добавляет в `~/.zshrc` только небольшой управляемый блок `source`;
-- проверяет получившийся rc-файл через `zsh -n`;
-- создаёт резервную копию rc-файла, но переписывает его только когда
-  управляемый блок изменился;
-- безопасно обновляет только ранее управляемые установки: при конфликте хотя бы
-  с одним неуправляемым каталогом не изменяется ничего, а неудачная подмена
-  откатывает все шаблоны текущего запуска.
-
-Установка конкретной версии:
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/v0.1.0/install.sh |
-  env NEWPROJ_VERSION=v0.1.0 sh
+```text
+NEWPROJ_SOURCE=/path/to/newproj-0.3.0-py3-none-any.whl sh install.sh
 ```
 
-Установка части шаблонов:
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
-  env NEWPROJ_TEMPLATES=fastapi-yaml sh
+```powershell
+$env:NEWPROJ_SOURCE = "C:\path\to\newproj-0.3.0-py3-none-any.whl"
+.\install.ps1
 ```
 
-Доступные настройки:
+Загрузчики не редактируют rc-файлы. Если каталог команд uv ещё не в `PATH`, uv
+показывает предупреждение; исправление выполняет `uv tool update-shell`.
 
-| Переменная | Назначение |
-|---|---|
-| `NEWPROJ_VERSION` | Версия GitHub Release, по умолчанию `latest` |
-| `NEWPROJ_TEMPLATES` | Список шаблонов через запятую, по умолчанию все из архива |
-| `NEWPROJ_TEMPLATES_DIR` | Каталог шаблонов, по умолчанию `~/templates` |
-| `NEWPROJ_INSTALL_DIR` | Каталог shell-интеграции |
-| `NEWPROJ_RC_FILE` | Изменяемый Zsh rc-файл |
-| `NEWPROJ_NO_MODIFY_RC=1` | Не изменять shell profile |
-| `NEWPROJ_REPOSITORY_URL` | URL репозитория и релизов |
-| `NEWPROJ_ARCHIVE_URL` | Явный URL архива для тестов или зеркала |
-| `NEWPROJ_CHECKSUM` | Ожидаемый SHA-256 без загрузки checksum-файла |
-| `NEWPROJ_UPDATE_CHECK_DAYS` | Как часто проверять релизы, по умолчанию 7; `0` выключает проверку и подсказку |
-| `NEWPROJ_UPDATE_CHECK_TIMEOUT` | Таймаут запроса версии в секундах, по умолчанию 10 |
+## Обновление и удаление
 
-## Обновление
-
-```bash
-newproj update           # обновить, если вышел новый релиз
-newproj update --check   # только проверить
-newproj update --force   # переустановить текущий релиз без проверки
+```text
+newproj update
+uv tool uninstall newproj
 ```
 
-`newproj update` запускает копию `install.sh` из каталога установки с
-настройками из `state`: `NEWPROJ_TEMPLATES_DIR`, `NEWPROJ_INSTALL_DIR`,
-`NEWPROJ_RC_FILE`, `NEWPROJ_NO_MODIFY_RC`, `NEWPROJ_TEMPLATES` и
-`NEWPROJ_REPOSITORY_URL`. Установщик из свежего архива заменяет собственную
-копию через `mv`, поэтому переименование не задевает inode, который читает
-запущенный `sh`, и обновление на самом себе безопасно.
-
-Версия определяется по имени корневого каталога архива
-(`newproj-templates-<версия>`, префикс задаёт `build-release.sh`), а не по
-`NEWPROJ_VERSION`: при установке по умолчанию там стоит `latest`, и сравнивать
-было бы не с чем. Для архива без такого префикса берётся `NEWPROJ_VERSION`.
-
-Тег последнего релиза читается из редиректа `<репозиторий>/releases/latest` без
-GitHub API и токена. Проверка при старте оболочки уходит в отсоединённый фон
-(`&!`), результат кладётся в `update-check`, а баннер печатается из кеша хуком
-`precmd` — один раз за сессию, после чего хук снимает сам себя. Версия, о
-которой уже сообщили, запоминается в `update-notified`.
-
-## Удаление
-
-```bash
-sh ~/.local/share/newproj/uninstall.sh
-```
-
-`install.sh` кладёт копию `uninstall.sh` рядом с shell-интеграцией, поэтому
-удаление работает без сети и соответствует установленной версии. Скрипт:
-
-- удаляет только каталоги с меткой `.newproj-managed`, оставляя рядом лежащие
-  чужие шаблоны;
-- снимает блок из rc-файла тем же разбором маркеров, что и установщик, проверяет
-  результат через `zsh -n` и делает резервную копию перед заменой;
-- не удаляет резервные копии rc-файла, а перечисляет их в конце;
-- при `NEWPROJ_TEMPLATES` удаляет только указанные шаблоны и в этом случае
-  сохраняет shell-интеграцию, потому что оставшимся шаблонам нужна команда
-  `newproj`;
-- безопасен при повторном запуске.
-
-Понимает те же `NEWPROJ_TEMPLATES`, `NEWPROJ_TEMPLATES_DIR`,
-`NEWPROJ_INSTALL_DIR`, `NEWPROJ_RC_FILE` и `NEWPROJ_NO_MODIFY_RC`, что и
-установщик.
+Встроенная команда обновления вызывает `uv tool upgrade newproj`. Обновление
+wheel одновременно заменяет код CLI и встроенные шаблоны.
 
 ## Проверка
 
-Smoke-тест работает в изолированном временном `HOME` и не изменяет
-пользовательские файлы:
-
-```bash
+```text
 sh installer/test-install.sh
 ```
 
-Тест собирает архив из рабочей копии и проверяет: отсутствие `.git` и
-`config.yaml` в архиве, первую установку, повторное обновление, отсутствие
-дублирующихся блоков в `.zshrc`, загрузку функции, выборочную установку через
-`NEWPROJ_TEMPLATES`, отказ при неизвестном имени шаблона и отказ перезаписывать
-неуправляемый шаблон, разрешение версии из имени корня архива и запасной путь
-без префикса, отсутствие лишних резервных копий rc-файла при повторной
-установке, подсказку об обновлении из кеша и её отключение через
-`NEWPROJ_UPDATE_CHECK_DAYS=0`, а также `newproj update --force`.
+Smoke-тест запускает pytest и Ruff, собирает sdist и wheel, устанавливает wheel
+в отдельный каталог и создаёт проект `fastapi-yaml`. CI повторяет проверки на
+Ubuntu, macOS и Windows; Windows job использует и Git Bash, и PowerShell.
 
 ## Сборка релиза
 
-После коммита изменений создать архив и checksum:
-
-```bash
-sh installer/build-release.sh v0.1.0
-```
-
-Скрипт создаст:
+Версия тега `vX.Y.Z` обязана совпадать с `project.version` в `pyproject.toml`:
 
 ```text
-dist/v0.1.0/newproj-templates.tar.gz
-dist/v0.1.0/newproj-templates.tar.gz.sha256
+sh installer/build-release.sh v0.3.0
 ```
 
-Оба файла необходимо прикрепить к GitHub Release с тегом `v0.1.0`; workflow
-[release-newproj.yml](../.github/workflows/release-newproj.yml) делает это
-автоматически при push тега `v*`.
+Результат:
 
-## Разработка шаблонов
+```text
+dist/v0.3.0/newproj-templates.tar.gz
+dist/v0.3.0/newproj-templates.tar.gz.sha256
+dist/v0.3.0/newproj-0.3.0-py3-none-any.whl
+```
 
-Установщик отказывается перезаписывать каталог без `.newproj-managed`, поэтому
-рабочую копию этого репозитория нельзя держать в `~/templates` под именем
-устанавливаемого шаблона. Держите её в отдельном каталоге, например
-`~/src/newproj`, а установленные шаблоны — в `~/templates`.
+Архив имеет постоянное имя и служит URL установки `releases/latest/download`.
+Wheel прикладывается отдельно для диагностики и прямой установки конкретной
+версии. Workflow `release-newproj.yml` публикует все три файла.

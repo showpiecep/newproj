@@ -1,166 +1,149 @@
 # newproj
 
-Набор [Copier](https://copier.readthedocs.io/)-шаблонов проектов и команда
-`newproj`, которая создаёт новый проект из выбранного шаблона в интерактивном
-режиме.
+Кроссплатформенная команда для создания проектов из встроенных
+[Copier](https://copier.readthedocs.io/)-шаблонов. Работает в macOS, Linux и
+Windows, в том числе в Zsh, Bash, Fish, Git Bash, PowerShell и `cmd`.
 
 Документация и changelog: <https://showpiecep.github.io/newproj/>
 
 ## Установка
 
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh |
-  sh
-```
+Сначала установите [uv](https://docs.astral.sh/uv/getting-started/installation/).
+Python отдельно не требуется: при необходимости uv установит его сам.
 
-Установщик скачивает архив релиза, проверяет его SHA-256, раскладывает шаблоны в
-`~/templates/<шаблон>` и подключает команду `newproj` через управляемый блок в
-`~/.zshrc`:
-
-```zsh
-# >>> newproj >>>
-NEWPROJ_TEMPLATES_DIR='/Users/you/templates'
-NEWPROJ_INSTALL_DIR='/Users/you/.local/share/newproj'
-source '/Users/you/.local/share/newproj/newproj.zsh'
-# <<< newproj <<<
-```
-
-После установки:
-
-```bash
-source ~/.zshrc
-newproj
-```
-
-Требуется Zsh и `copier` либо `uvx` в `PATH` (`uvx` входит в
-[uv](https://docs.astral.sh/uv/)).
-
-## Обновление
-
-```bash
-newproj update           # обновить, если вышел новый релиз
-newproj update --check   # только проверить, ничего не устанавливая
-newproj update --force   # переустановить текущий релиз без проверки
-```
-
-Повторно запускать `curl | sh` не нужно: установщик кладёт свою копию рядом с
-shell-интеграцией, и `newproj update` запускает её с настройками прошлой
-установки — тем же каталогом шаблонов, тем же rc-файлом и тем же набором
-шаблонов. Свежий `install.sh` приезжает внутри архива релиза и заменяет копию,
-поэтому обновляется и сам установщик.
-
-Обновление трогает только каталоги с меткой `.newproj-managed`; неудачная
-подмена откатывается так же, как при установке, а `~/.zshrc` переписывается,
-только если управляемый блок действительно изменился.
-
-Установленная версия хранится в `~/.local/share/newproj/state`. Не чаще раза в
-неделю оболочка проверяет в фоне, вышел ли новый релиз, и один раз за сессию
-показывает подсказку:
+Во всех оболочках команда установки одинакова:
 
 ```text
-newproj: доступна версия v0.2.0, установлена v0.1.0.
-Обновить: newproj update
+uv tool install https://github.com/showpiecep/newproj/releases/latest/download/newproj-templates.tar.gz
 ```
 
-Проверка идёт по редиректу `/releases/latest` — без GitHub API и без токена, —
-уходит в отсоединённый фон и не задерживает запуск оболочки. Частота задаётся
-переменной `NEWPROJ_UPDATE_CHECK_DAYS` (по умолчанию `7`); `0` полностью
-выключает и проверки, и подсказку:
+Если uv предупредил, что каталог команд отсутствует в `PATH`:
 
-```zsh
-export NEWPROJ_UPDATE_CHECK_DAYS=0
+```text
+uv tool update-shell
 ```
 
-## Удаление
+После этого откройте новый терминал и проверьте установку:
+
+```text
+newproj --version
+newproj list
+```
+
+Также доступны загрузчики:
 
 ```bash
+# macOS, Linux, WSL и Git Bash
+curl -LsSf https://raw.githubusercontent.com/showpiecep/newproj/main/install.sh | sh
+```
+
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/showpiecep/newproj/main/install.ps1 | iex
+```
+
+## Использование
+
+```text
+newproj                  # интерактивное создание проекта
+newproj create           # то же явно
+newproj list             # встроенные и пользовательские шаблоны
+newproj update           # обновить CLI и встроенные шаблоны
+newproj update --check   # сравнить версию с последним релизом
+newproj --help
+```
+
+Без аргументов команда спрашивает родительский каталог, имя проекта и шаблон,
+после чего запускает Copier. `newproj` — отдельная исполняемая программа, поэтому
+она не меняет каталог родительской оболочки; в конце команда печатает готовую
+команду `cd`.
+
+Для CI и скриптов есть неинтерактивный режим:
+
+```text
+newproj create --parent . --name example --template fastapi-yaml --defaults --non-interactive
+```
+
+Встроенные шаблоны поставляются внутри Python-пакета. Собственные Copier-шаблоны
+можно положить в `~/templates`; другой путь задаётся переменной
+`NEWPROJ_TEMPLATES_DIR`. Пользовательский шаблон с тем же именем перекрывает
+встроенный, кроме копий с меткой старого установщика `.newproj-managed`.
+
+## Обновление и удаление
+
+```text
+newproj update
+uv tool uninstall newproj
+```
+
+`newproj update` вызывает `uv tool upgrade newproj`, поэтому команда и встроенные
+шаблоны обновляются одной атомарной установкой. Оболочечные rc-файлы newproj не
+изменяет.
+
+### Переход со старой Zsh-версии
+
+Версии до `v0.3.0` добавляли функцию в `~/.zshrc` и копировали шаблоны в
+`~/templates`. Перед новой установкой выполните старый деинсталлятор, если он
+сохранился:
+
+```text
 sh ~/.local/share/newproj/uninstall.sh
 ```
 
-Копия деинсталлятора кладётся рядом с shell-интеграцией при установке, поэтому
-сеть для удаления не нужна. Тот же скрипт доступен и по HTTPS:
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/showpiecep/newproj/main/uninstall.sh | sh
-```
-
-Удаляются только каталоги с меткой `.newproj-managed`, блок из `~/.zshrc` и сама
-shell-интеграция. Ваши собственные шаблоны в `~/templates`, созданные проекты и
-резервные копии `~/.zshrc` остаются на месте.
-
-## Как работает `newproj`
-
-```bash
-newproj          # интерактивное создание проекта
-newproj list     # какие шаблоны доступны, с описанием каждого
-newproj update   # обновить шаблоны и саму команду
-newproj --help   # справка
-```
-
-Без аргументов команда спрашивает, где создать проект, как его назвать, и
-показывает список шаблонов, найденных в `$NEWPROJ_TEMPLATES_DIR`. Дальше
-запускается `copier copy`, который задаёт остальные вопросы шаблона, и оболочка
-переходит в созданный проект:
-
-`каталог -> имя проекта -> выбор шаблона -> copier copy -> cd в новый проект`
-
-Список шаблонов строится из каталогов с файлом `copier.yml`, поэтому в
-`~/templates` можно положить собственный шаблон рядом с установленными — он
-появится в меню без изменения кода.
+Затем установите новую версию и перезапустите терминал. Даже если старые копии
+шаблонов остались, новая команда распознает метку `.newproj-managed` и использует
+актуальные встроенные версии.
 
 ## Шаблоны
 
 | Шаблон | Назначение |
 |---|---|
-| [fastapi-yaml](templates/fastapi-yaml/) | FastAPI-сервис с типизированной конфигурацией из YAML вместо `.env`, Loguru, типизированным `app.state` и настроенными ruff/pytest/pre-commit |
-| [inspect-eval](templates/inspect-eval/) | Тестирующий сервис на Inspect AI: прогон датасета через тестируемый сервис, оценка LLM-судьёй по критериям, версионируемые конфиги прогонов и настроенный вид логов |
+| [fastapi-yaml](templates/fastapi-yaml/) | FastAPI-сервис с типизированной YAML-конфигурацией, Loguru и настроенными ruff/pytest/pre-commit |
+| [inspect-eval](templates/inspect-eval/) | Сервис оценки на Inspect AI с LLM-судьёй, конфигами прогонов и просмотром логов |
 
-Шаблоны рассчитаны на пару репозиториев: приложение из `fastapi-yaml` и
-тестирующий его сервис из `inspect-eval`. У них разные зависимости, разный
-жизненный цикл и разные правила разработки, поэтому это два шаблона, а не один
-с флагом.
+## Разработка
+
+```text
+uv sync
+uv run pytest
+uv run ruff check src tests
+uv build
+```
+
+Полный smoke-тест собирает wheel, устанавливает его в изолированный каталог и
+создаёт настоящий проект:
+
+```text
+sh installer/test-install.sh
+```
+
+GitHub Actions выполняет те же проверки на Ubuntu, macOS и Windows с Python
+3.11 и 3.13. На Windows отдельно запускаются Git Bash и PowerShell.
 
 ## Структура репозитория
 
 ```text
-templates/<имя>/      Copier-шаблоны, по одному каталогу на шаблон
-installer/newproj.zsh Функция newproj для Zsh
-installer/            Сборка релиза и smoke-тест установщика
-install.sh            Установщик, запускаемый через curl | sh
-uninstall.sh          Деинсталлятор, копируется в каталог установки
-docs/                 Сайт документации на Quarto
-cliff.toml            Сборка changelog из истории коммитов
+src/newproj/          кроссплатформенный Python CLI
+templates/<имя>/     Copier-шаблоны
+tests/                тесты CLI и состава пакета
+installer/            smoke-тест и сборка релиза
+install.sh            загрузчик для POSIX-оболочек
+install.ps1           загрузчик для PowerShell
+docs/                 сайт Quarto
 ```
 
-## Как добавить шаблон
-
-1. Создать каталог `templates/<имя>` с файлом `copier.yml`.
-2. Описать в нём вопросы шаблона и исключить из генерации служебные файлы через
-   `_exclude` (как минимум `copier.yml` и `.newproj-managed`).
-3. Проверить генерацию: `copier copy templates/<имя> /tmp/probe --trust`.
-4. Добавить строку в таблицу шаблонов выше.
-
-Отдельно править установщик не нужно: он раскладывает все каталоги из
-`templates/`, а `newproj` находит их по наличию `copier.yml`.
+Новый шаблон — это каталог `templates/<имя>` с `copier.yml`. Отдельно менять CLI
+не нужно: шаблоны автоматически включаются в wheel при сборке.
 
 ## Выпуск версии
 
-```bash
+Версия в `pyproject.toml` должна совпадать с тегом без префикса `v`:
+
+```text
 sh installer/test-install.sh
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-Тег `v*` запускает workflow, который собирает `newproj-templates.tar.gz` с
-контрольной суммой и публикует их в GitHub Release. По его завершении
-пересобирается сайт с обновлённым changelog. Подробности установщика и переменные окружения — в
-[installer/README.md](installer/README.md).
-
-Сообщения коммитов обязаны быть conventional commits: changelog собирается из
-истории, отдельного файла в репозитории нет. Собрать сайт локально:
-
-```bash
-uvx git-cliff --config cliff.toml --output docs/_changelog.md
-quarto preview docs
-```
+Release workflow собирает архив исходников с постоянным URL, wheel и SHA-256,
+затем публикует их в GitHub Release.
