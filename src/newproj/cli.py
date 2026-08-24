@@ -26,6 +26,14 @@ class Template:
     built_in: bool
 
 
+def _configure_stdio() -> None:
+    """Use one predictable encoding in Windows shells and redirected CI logs."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
+
+
 def _bundled_templates_root() -> Path:
     packaged = Path(__file__).parent / "_templates"
     if packaged.is_dir():
@@ -245,6 +253,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_stdio()
     parser = build_parser()
     args = parser.parse_args(argv)
     try:

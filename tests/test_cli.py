@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -109,3 +112,18 @@ def test_update_uses_uv_tool_upgrade(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert result == 0
     assert commands == [["/bin/uv", "tool", "upgrade", "newproj", "--reinstall"]]
+
+
+def test_cli_uses_utf8_when_parent_shell_has_legacy_encoding() -> None:
+    environment = os.environ.copy()
+    environment["PYTHONIOENCODING"] = "cp1252"
+
+    result = subprocess.run(
+        [sys.executable, "-m", "newproj", "list"],
+        check=False,
+        capture_output=True,
+        env=environment,
+    )
+
+    assert result.returncode == 0
+    assert "Доступные шаблоны" in result.stdout.decode("utf-8")
