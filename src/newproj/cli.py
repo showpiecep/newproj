@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -218,9 +220,30 @@ def create_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def _remove_clone(path: Path) -> None:
+    """Удалить клон целиком.
+
+    На Windows файлы внутри `.git` помечены «только чтение», и обычный
+    `rmtree` на них останавливается.
+    """
+
+    def clear_readonly(function: Callable[[str], object], name: str, _error: object) -> None:
+        os.chmod(name, stat.S_IWRITE)
+        function(name)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=clear_readonly)
+    else:
+        shutil.rmtree(path, onerror=clear_readonly)
+
+
 def _source_name(url: str) -> str:
-    """Имя каталога шаблона по адресу репозитория."""
-    tail = url.rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+    """Имя каталога шаблона по адресу репозитория.
+
+    Источником может быть и локальный путь, поэтому разделителем считается как
+    `/`, так и `\\`: на Windows `C:\\repos\\templates` иначе не разбирается.
+    """
+    tail = url.rstrip("/\\").replace("\\", "/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
     name = tail.removesuffix(".git")
     if not name or name in {".", ".."} or "\\" in name:
         raise ValueError(f"Не удалось определить имя каталога из {url!r}. Укажите --name.")
@@ -251,9 +274,13 @@ def add_source(args: argparse.Namespace) -> int:
         raise RuntimeError(f"Не удалось клонировать {args.url}.")
 
     if not _is_template(target):
+        message = f"В корне {args.url} нет copier.yml, это не Copier-шаблон."
         # Каталог создан этой же командой, поэтому его удаление безопасно.
-        shutil.rmtree(target, ignore_errors=True)
-        raise RuntimeError(f"В корне {args.url} нет copier.yml, это не Copier-шаблон. Клон удалён.")
+        try:
+            _remove_clone(target)
+        except OSError as error:
+            raise RuntimeError(f"{message} Клон остался в {target}: {error}") from error
+        raise RuntimeError(f"{message} Клон удалён.")
 
     print(f"\nШаблон добавлен: {target}")
     print(f"Создать проект: newproj create --template {name}")

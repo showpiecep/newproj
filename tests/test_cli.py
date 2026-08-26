@@ -222,6 +222,8 @@ needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="нужен g
         ("https://github.com/acme/copier-templates", "copier-templates"),
         ("git@github.com:acme/copier-templates.git", "copier-templates"),
         ("https://github.com/acme/copier-templates/", "copier-templates"),
+        # Локальный источник на Windows: буква диска и обратные слэши.
+        ("C:\\repos\\copier-templates", "copier-templates"),
     ],
 )
 def test_source_name_is_taken_from_url(url: str, expected: str) -> None:
@@ -242,10 +244,12 @@ def test_add_clones_repository_and_shows_its_origin(
 
     template = next(item for item in cli.discover_templates() if item.name == "copier-templates")
     assert not template.built_in
-    assert template.origin == str(source)
+    # Git возвращает адрес в своей записи, поэтому сравнение идёт путями.
+    assert template.origin is not None
+    assert Path(template.origin) == source
 
     assert cli.main(["list"]) == 0
-    assert f"copier-templates (из {source})" in capsys.readouterr().out
+    assert f"copier-templates (из {template.origin})" in capsys.readouterr().out
 
 
 @needs_git
@@ -260,19 +264,25 @@ def test_add_uses_explicit_name(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
 @needs_git
 def test_add_rejects_repository_without_copier_yml(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     source = _git_repository(tmp_path / "plain", with_template=False)
     monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
 
     assert cli.main(["add", str(source)]) == 1
+    # Проверка не должна проходить по любой другой ошибке команды.
+    assert "copier.yml" in capsys.readouterr().err
     # Клон, созданный командой, не должен оставаться на диске.
     assert not (tmp_path / "custom" / "plain").exists()
 
 
 @needs_git
 def test_add_does_not_overwrite_existing_template(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     source = _git_repository(tmp_path / "copier-templates")
     existing = tmp_path / "custom" / "copier-templates"
@@ -281,4 +291,5 @@ def test_add_does_not_overwrite_existing_template(
     monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
 
     assert cli.main(["add", str(source)]) == 1
+    assert "уже существует" in capsys.readouterr().err
     assert (existing / "keep.txt").is_file()
