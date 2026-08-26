@@ -47,7 +47,8 @@ irm https://raw.githubusercontent.com/showpiecep/newproj/main/install.ps1 | iex
 ```text
 newproj                  # интерактивное создание проекта
 newproj create           # то же явно
-newproj list             # встроенные и пользовательские шаблоны
+newproj list             # встроенные и добавленные шаблоны
+newproj add <url>        # добавить шаблоны из Git-репозитория
 newproj update           # обновить CLI и встроенные шаблоны
 newproj update --check   # сравнить версию с последним релизом
 newproj --help
@@ -75,6 +76,26 @@ newproj create --parent . --name example --template git@github.com:owner/private
 Для закрытого репозитория используется обычная авторизация Git: SSH-ключи или
 настроенный менеджер учётных данных. Токен в командной строке указывать не
 следует — он может сохраниться в истории оболочки.
+
+Репозиторий с шаблонами можно добавить к себе один раз, чтобы он появился в
+меню и в `newproj list`:
+
+```text
+newproj add git@github.com:owner/copier-templates.git
+newproj add https://github.com/owner/copier-templates.git --name team --ref main
+```
+
+Команда клонирует репозиторий в каталог пользовательских шаблонов и проверяет,
+что в его корне есть `copier.yml`; если файла нет, клон удаляется. Имя каталога
+берётся из адреса и задаётся флагом `--name`. Добавленный шаблон виден в списке
+вместе с адресом, откуда он получен:
+
+```text
+  copier-templates (из git@github.com:owner/copier-templates.git)
+```
+
+Обновляется он обычным `git pull` в своём каталоге, удаляется — удалением этого
+каталога. Отдельного реестра источников нет: реестром служит сам клон.
 
 Встроенные шаблоны поставляются внутри Python-пакета. Собственные Copier-шаблоны
 можно положить в `~/templates`; другой путь задаётся переменной

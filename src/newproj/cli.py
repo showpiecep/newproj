@@ -24,6 +24,8 @@ class Template:
     name: str
     path: Path
     built_in: bool
+    # Адрес репозитория, если шаблон добавлен командой `newproj add`.
+    origin: str | None = None
 
 
 def _configure_stdio() -> None:
@@ -55,6 +57,33 @@ def _is_template(path: Path) -> bool:
     return path.is_dir() and ((path / "copier.yml").is_file() or (path / "copier.yaml").is_file())
 
 
+def _template_origin(path: Path) -> str | None:
+    """Адрес репозитория шаблона. Реестром служит сам клон, отдельного файла нет."""
+    if not (path / ".git").exists():
+        return None
+    git = shutil.which("git")
+    if git is None:
+        return None
+    result = subprocess.run(
+        [git, "-C", str(path), "remote", "get-url", "origin"],
+        check=False,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def _origin_label(template: Template) -> str:
+    if template.built_in:
+        return "встроенный"
+    if template.origin:
+        return f"из {template.origin}"
+    return "пользовательский"
+
+
 def discover_templates() -> list[Template]:
     templates: dict[str, Template] = {}
     for candidate in sorted(_bundled_templates_root().iterdir(), key=lambda path: path.name):
@@ -70,7 +99,12 @@ def discover_templates() -> list[Template]:
             # managed copy shadow the version bundled with the new CLI.
             if (candidate / MANAGED_MARKER).is_file() and candidate.name in templates:
                 continue
-            templates[candidate.name] = Template(candidate.name, candidate, built_in=False)
+            templates[candidate.name] = Template(
+                candidate.name,
+                candidate,
+                built_in=False,
+                origin=_template_origin(candidate),
+            )
 
     return sorted(templates.values(), key=lambda template: template.name)
 
@@ -113,8 +147,7 @@ def _select_template(name: str | None, *, interactive: bool) -> Template | str:
 
     print("Выберите шаблон:")
     for index, template in enumerate(templates, start=1):
-        origin = "встроенный" if template.built_in else "пользовательский"
-        print(f"{index}) {template.name} ({origin})")
+        print(f"{index}) {template.name} ({_origin_label(template)})")
         summary = template_summary(template)
         if summary:
             print(f"   {summary}")
@@ -185,6 +218,49 @@ def create_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def _source_name(url: str) -> str:
+    """Имя каталога шаблона по адресу репозитория."""
+    tail = url.rstrip("/").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+    name = tail.removesuffix(".git")
+    if not name or name in {".", ".."} or "\\" in name:
+        raise ValueError(f"Не удалось определить имя каталога из {url!r}. Укажите --name.")
+    return name
+
+
+def add_source(args: argparse.Namespace) -> int:
+    """Клонировать репозиторий с шаблоном в каталог пользовательских шаблонов."""
+    name = args.name or _source_name(args.url)
+    if name in {".", ".."} or "/" in name or "\\" in name:
+        raise ValueError("Имя должно быть именем каталога без / и \\.")
+
+    root = _custom_templates_root()
+    target = root / name
+    if target.exists():
+        raise FileExistsError(f"Путь уже существует: {target}. Укажите другое --name.")
+
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("Не найден git. Установите его: https://git-scm.com/")
+
+    root.mkdir(parents=True, exist_ok=True)
+    command = [git, "clone"]
+    if args.ref:
+        command += ["--branch", args.ref]
+    command += [args.url, str(target)]
+    if subprocess.run(command, check=False).returncode != 0:
+        raise RuntimeError(f"Не удалось клонировать {args.url}.")
+
+    if not _is_template(target):
+        # Каталог создан этой же командой, поэтому его удаление безопасно.
+        shutil.rmtree(target, ignore_errors=True)
+        raise RuntimeError(f"В корне {args.url} нет copier.yml, это не Copier-шаблон. Клон удалён.")
+
+    print(f"\nШаблон добавлен: {target}")
+    print(f"Создать проект: newproj create --template {name}")
+    print(f"Обновить позже: git -C {target} pull")
+    return 0
+
+
 def list_templates() -> int:
     templates = discover_templates()
     if not templates:
@@ -193,8 +269,7 @@ def list_templates() -> int:
 
     print("Доступные шаблоны:")
     for template in templates:
-        origin = "встроенный" if template.built_in else "пользовательский"
-        print(f"\n  {template.name} ({origin})")
+        print(f"\n  {template.name} ({_origin_label(template)})")
         summary = template_summary(template)
         if summary:
             print(f"    {summary}")
@@ -256,6 +331,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--non-interactive", action="store_true", help="не задавать вопросы newproj"
     )
 
+    add = subparsers.add_parser("add", help="добавить шаблоны из Git-репозитория")
+    add.add_argument("url", help="адрес репозитория с шаблоном или коллекцией шаблонов")
+    add.add_argument("--name", help="имя каталога шаблона; по умолчанию имя репозитория")
+    add.add_argument("--ref", help="ветка или тег репозитория")
+
     subparsers.add_parser("list", help="показать доступные шаблоны")
 
     update = subparsers.add_parser("update", help="обновить установленную команду и шаблоны")
@@ -274,6 +354,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.command is None:
                 args = parser.parse_args(["create"])
             return create_project(args)
+        if args.command == "add":
+            return add_source(args)
         if args.command == "list":
             return list_templates()
         if args.command == "update":

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -181,3 +182,103 @@ def test_cli_uses_utf8_when_parent_shell_has_legacy_encoding() -> None:
 
     assert result.returncode == 0
     assert "Доступные шаблоны" in result.stdout.decode("utf-8")
+
+
+def _git_repository(path: Path, *, with_template: bool = True) -> Path:
+    """Локальный репозиторий-источник для проверок `newproj add`."""
+    path.mkdir(parents=True)
+    if with_template:
+        (path / "copier.yml").write_text("project_name:\n  type: str\n", encoding="utf-8")
+    else:
+        (path / "README.md").write_text("Не шаблон.\n", encoding="utf-8")
+    subprocess.run(["git", "init", "--quiet", str(path)], check=True)
+    subprocess.run(["git", "-C", str(path), "add", "."], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(path),
+            "-c",
+            "user.email=newproj@example.com",
+            "-c",
+            "user.name=newproj",
+            "commit",
+            "--quiet",
+            "-m",
+            "initial",
+        ],
+        check=True,
+    )
+    return path
+
+
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="нужен git")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://github.com/acme/copier-templates.git", "copier-templates"),
+        ("https://github.com/acme/copier-templates", "copier-templates"),
+        ("git@github.com:acme/copier-templates.git", "copier-templates"),
+        ("https://github.com/acme/copier-templates/", "copier-templates"),
+    ],
+)
+def test_source_name_is_taken_from_url(url: str, expected: str) -> None:
+    assert cli._source_name(url) == expected
+
+
+@needs_git
+def test_add_clones_repository_and_shows_its_origin(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 0
+    capsys.readouterr()
+
+    template = next(item for item in cli.discover_templates() if item.name == "copier-templates")
+    assert not template.built_in
+    assert template.origin == str(source)
+
+    assert cli.main(["list"]) == 0
+    assert f"copier-templates (из {source})" in capsys.readouterr().out
+
+
+@needs_git
+def test_add_uses_explicit_name(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source), "--name", "team"]) == 0
+
+    assert (tmp_path / "custom" / "team" / "copier.yml").is_file()
+
+
+@needs_git
+def test_add_rejects_repository_without_copier_yml(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    source = _git_repository(tmp_path / "plain", with_template=False)
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 1
+    # Клон, созданный командой, не должен оставаться на диске.
+    assert not (tmp_path / "custom" / "plain").exists()
+
+
+@needs_git
+def test_add_does_not_overwrite_existing_template(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    existing = tmp_path / "custom" / "copier-templates"
+    existing.mkdir(parents=True)
+    (existing / "keep.txt").write_text("важное\n", encoding="utf-8")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 1
+    assert (existing / "keep.txt").is_file()
