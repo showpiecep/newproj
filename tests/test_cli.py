@@ -80,6 +80,60 @@ def test_non_interactive_creation_calls_copier(
     assert calls[0][1]["data"] == {"project_name": "Smoke Project"}
     assert calls[0][1]["defaults"] is True
     assert calls[0][1]["unsafe"] is True
+    assert calls[0][1]["vcs_ref"] is None
+
+
+def test_git_template_source_is_passed_to_copier(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fake_run_copy(*args: object, **kwargs: object) -> None:
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(cli, "run_copy", fake_run_copy)
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+    args = SimpleNamespace(
+        parent=str(tmp_path),
+        name="from-git",
+        template="git@github.com:acme/private-template.git",
+        vcs_ref="release-2026",
+        defaults=True,
+        non_interactive=True,
+    )
+
+    result = cli.create_project(args)
+
+    assert result == 0
+    assert calls[0][0][0] == "git@github.com:acme/private-template.git"
+    assert calls[0][1]["vcs_ref"] == "release-2026"
+
+
+def test_cli_accepts_copier_github_shorthand(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sources: list[str] = []
+
+    def fake_run_copy(source: str, *args: object, **kwargs: object) -> None:
+        sources.append(source)
+
+    monkeypatch.setattr(cli, "run_copy", fake_run_copy)
+
+    result = cli.main(
+        [
+            "create",
+            "--parent",
+            str(tmp_path),
+            "--name",
+            "from-github",
+            "--template",
+            "gh:acme/project-template",
+            "--non-interactive",
+        ]
+    )
+
+    assert result == 0
+    assert sources == ["gh:acme/project-template"]
 
 
 def test_cli_lists_templates(

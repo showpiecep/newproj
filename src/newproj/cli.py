@@ -94,7 +94,7 @@ def template_summary(template: Template) -> str:
     return summary
 
 
-def _select_template(name: str | None, *, interactive: bool) -> Template:
+def _select_template(name: str | None, *, interactive: bool) -> Template | str:
     templates = discover_templates()
     if not templates:
         raise RuntimeError("Не найдено ни одного Copier-шаблона.")
@@ -103,8 +103,10 @@ def _select_template(name: str | None, *, interactive: bool) -> Template:
         for template in templates:
             if template.name == name:
                 return template
-        available = ", ".join(template.name for template in templates)
-        raise ValueError(f"Неизвестный шаблон {name!r}. Доступны: {available}")
+        # Copier accepts Git URLs, GitHub/GitLab shorthands, and local Git
+        # repositories. Keep the source untouched so Copier remains the single
+        # authority on supported source formats and authentication.
+        return name
 
     if not interactive:
         raise ValueError("В неинтерактивном режиме укажите --template.")
@@ -151,13 +153,19 @@ def create_project(args: argparse.Namespace) -> int:
     name = _validate_project_name(name)
 
     template = _select_template(args.template, interactive=interactive)
+    if isinstance(template, Template):
+        template_name = template.name
+        template_source = str(template.path)
+    else:
+        template_name = template
+        template_source = template
     target = parent / name
     if target.exists():
         raise FileExistsError(f"Путь уже существует: {target}")
 
     if interactive:
         print(f"\nПроект:  {target}")
-        print(f"Шаблон:  {template.name}")
+        print(f"Шаблон:  {template_name}")
         confirmation = input("Продолжить? [Y/n]: ").strip().lower()
         if confirmation and confirmation not in {"y", "yes"}:
             print("Создание проекта отменено.")
@@ -165,11 +173,12 @@ def create_project(args: argparse.Namespace) -> int:
 
     parent.mkdir(parents=True, exist_ok=True)
     run_copy(
-        str(template.path),
+        template_source,
         target,
         data={"project_name": name},
         defaults=args.defaults,
         unsafe=True,
+        vcs_ref=getattr(args, "vcs_ref", None),
     )
     print(f"\nПроект создан: {target}")
     print(f"Перейти в него: cd {target}")
@@ -235,7 +244,11 @@ def build_parser() -> argparse.ArgumentParser:
     create = subparsers.add_parser("create", help="создать проект")
     create.add_argument("--parent", help="родительский каталог проекта")
     create.add_argument("--name", help="имя проекта и его каталога")
-    create.add_argument("--template", help="имя шаблона")
+    create.add_argument(
+        "--template",
+        help="имя шаблона или поддерживаемый Copier путь/URL Git-репозитория",
+    )
+    create.add_argument("--vcs-ref", help="ветка, тег или коммит Git-шаблона")
     create.add_argument(
         "--defaults", action="store_true", help="принять ответы Copier по умолчанию"
     )

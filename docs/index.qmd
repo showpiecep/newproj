@@ -54,6 +54,17 @@ newproj --help
 newproj create --parent . --name example --template fastapi-yaml --defaults --non-interactive
 ```
 
+`--template` также принимает поддерживаемый Copier Git-источник. Ревизию можно
+зафиксировать через `--vcs-ref`:
+
+```text
+newproj create --parent . --name example --template gh:owner/copier-template
+newproj create --parent . --name example --template git@github.com:owner/private-template.git --vcs-ref v2.0.0
+```
+
+Закрытые репозитории используют настроенную авторизацию Git (например,
+SSH-ключ или менеджер учётных данных). Секреты в URL передавать не следует.
+
 CLI не может изменить текущий каталог родительской оболочки, поэтому после
 создания печатает готовую команду `cd`.
 

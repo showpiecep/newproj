@@ -64,6 +64,18 @@ newproj --help
 newproj create --parent . --name example --template fastapi-yaml --defaults --non-interactive
 ```
 
+Вместо имени установленного шаблона можно передать любой Git-источник, который
+поддерживает Copier, и при необходимости выбрать ветку, тег или коммит:
+
+```text
+newproj create --parent . --name example --template gh:owner/copier-template
+newproj create --parent . --name example --template git@github.com:owner/private-template.git --vcs-ref main
+```
+
+Для закрытого репозитория используется обычная авторизация Git: SSH-ключи или
+настроенный менеджер учётных данных. Токен в командной строке указывать не
+следует — он может сохраниться в истории оболочки.
+
 Встроенные шаблоны поставляются внутри Python-пакета. Собственные Copier-шаблоны
 можно положить в `~/templates`; другой путь задаётся переменной
 `NEWPROJ_TEMPLATES_DIR`. Пользовательский шаблон с тем же именем перекрывает

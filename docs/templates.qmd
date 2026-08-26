@@ -6,6 +6,20 @@ title: Шаблоны
 wheel, а пользовательские читаются из `~/templates` или каталога в
 `NEWPROJ_TEMPLATES_DIR`. Собственный шаблон появляется в меню без правок CLI.
 
+Шаблон не обязательно устанавливать локально. Команда `create` принимает в
+`--template` любой Git-источник, который понимает Copier, например сокращение
+GitHub, HTTPS- или SSH-адрес:
+
+```text
+newproj create --parent . --name example --template gh:owner/copier-template
+newproj create --parent . --name example --template https://github.com/owner/copier-template.git
+newproj create --parent . --name example --template git@github.com:owner/private-template.git --vcs-ref main
+```
+
+`--vcs-ref` выбирает ветку, тег или коммит. Для закрытого репозитория Copier и
+Git используют уже настроенные SSH-ключи либо менеджер учётных данных. Токен в
+URL лучше не помещать, чтобы он не оказался в истории команд.
+
 ## Что установлено
 
 | Шаблон | Назначение |
