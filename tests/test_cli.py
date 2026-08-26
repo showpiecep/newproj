@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -80,6 +81,60 @@ def test_non_interactive_creation_calls_copier(
     assert calls[0][1]["data"] == {"project_name": "Smoke Project"}
     assert calls[0][1]["defaults"] is True
     assert calls[0][1]["unsafe"] is True
+    assert calls[0][1]["vcs_ref"] is None
+
+
+def test_git_template_source_is_passed_to_copier(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fake_run_copy(*args: object, **kwargs: object) -> None:
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(cli, "run_copy", fake_run_copy)
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+    args = SimpleNamespace(
+        parent=str(tmp_path),
+        name="from-git",
+        template="git@github.com:acme/private-template.git",
+        vcs_ref="release-2026",
+        defaults=True,
+        non_interactive=True,
+    )
+
+    result = cli.create_project(args)
+
+    assert result == 0
+    assert calls[0][0][0] == "git@github.com:acme/private-template.git"
+    assert calls[0][1]["vcs_ref"] == "release-2026"
+
+
+def test_cli_accepts_copier_github_shorthand(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sources: list[str] = []
+
+    def fake_run_copy(source: str, *args: object, **kwargs: object) -> None:
+        sources.append(source)
+
+    monkeypatch.setattr(cli, "run_copy", fake_run_copy)
+
+    result = cli.main(
+        [
+            "create",
+            "--parent",
+            str(tmp_path),
+            "--name",
+            "from-github",
+            "--template",
+            "gh:acme/project-template",
+            "--non-interactive",
+        ]
+    )
+
+    assert result == 0
+    assert sources == ["gh:acme/project-template"]
 
 
 def test_cli_lists_templates(
@@ -127,3 +182,114 @@ def test_cli_uses_utf8_when_parent_shell_has_legacy_encoding() -> None:
 
     assert result.returncode == 0
     assert "Доступные шаблоны" in result.stdout.decode("utf-8")
+
+
+def _git_repository(path: Path, *, with_template: bool = True) -> Path:
+    """Локальный репозиторий-источник для проверок `newproj add`."""
+    path.mkdir(parents=True)
+    if with_template:
+        (path / "copier.yml").write_text("project_name:\n  type: str\n", encoding="utf-8")
+    else:
+        (path / "README.md").write_text("Не шаблон.\n", encoding="utf-8")
+    subprocess.run(["git", "init", "--quiet", str(path)], check=True)
+    subprocess.run(["git", "-C", str(path), "add", "."], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(path),
+            "-c",
+            "user.email=newproj@example.com",
+            "-c",
+            "user.name=newproj",
+            "commit",
+            "--quiet",
+            "-m",
+            "initial",
+        ],
+        check=True,
+    )
+    return path
+
+
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="нужен git")
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://github.com/acme/copier-templates.git", "copier-templates"),
+        ("https://github.com/acme/copier-templates", "copier-templates"),
+        ("git@github.com:acme/copier-templates.git", "copier-templates"),
+        ("https://github.com/acme/copier-templates/", "copier-templates"),
+        # Локальный источник на Windows: буква диска и обратные слэши.
+        ("C:\\repos\\copier-templates", "copier-templates"),
+    ],
+)
+def test_source_name_is_taken_from_url(url: str, expected: str) -> None:
+    assert cli._source_name(url) == expected
+
+
+@needs_git
+def test_add_clones_repository_and_shows_its_origin(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 0
+    capsys.readouterr()
+
+    template = next(item for item in cli.discover_templates() if item.name == "copier-templates")
+    assert not template.built_in
+    # Git возвращает адрес в своей записи, поэтому сравнение идёт путями.
+    assert template.origin is not None
+    assert Path(template.origin) == source
+
+    assert cli.main(["list"]) == 0
+    assert f"copier-templates (из {template.origin})" in capsys.readouterr().out
+
+
+@needs_git
+def test_add_uses_explicit_name(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source), "--name", "team"]) == 0
+
+    assert (tmp_path / "custom" / "team" / "copier.yml").is_file()
+
+
+@needs_git
+def test_add_rejects_repository_without_copier_yml(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = _git_repository(tmp_path / "plain", with_template=False)
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 1
+    # Проверка не должна проходить по любой другой ошибке команды.
+    assert "copier.yml" in capsys.readouterr().err
+    # Клон, созданный командой, не должен оставаться на диске.
+    assert not (tmp_path / "custom" / "plain").exists()
+
+
+@needs_git
+def test_add_does_not_overwrite_existing_template(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = _git_repository(tmp_path / "copier-templates")
+    existing = tmp_path / "custom" / "copier-templates"
+    existing.mkdir(parents=True)
+    (existing / "keep.txt").write_text("важное\n", encoding="utf-8")
+    monkeypatch.setenv("NEWPROJ_TEMPLATES_DIR", str(tmp_path / "custom"))
+
+    assert cli.main(["add", str(source)]) == 1
+    assert "уже существует" in capsys.readouterr().err
+    assert (existing / "keep.txt").is_file()
