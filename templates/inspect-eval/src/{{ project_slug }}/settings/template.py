@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr, TypeAdapter
 from pydantic_core import PydanticUndefined
 
 
@@ -12,8 +12,11 @@ def model_to_template(model: type[BaseModel]) -> dict[str, object]:
         if isinstance(field.annotation, type) and issubclass(field.annotation, BaseModel):
             result[name] = model_to_template(field.annotation)
         else:
-            default = field.default
-            result[name] = default if default is not PydanticUndefined else f"<{name}>"
+            default = field.get_default(call_default_factory=True)
+            if default is PydanticUndefined or isinstance(default, SecretStr):
+                result[name] = f"<{name}>"
+            else:
+                result[name] = TypeAdapter(type(default)).dump_python(default, mode="json")
 
     return result
 
@@ -23,6 +26,5 @@ def write_config_template(
     path: str | Path,
 ) -> None:
     template = model_to_template(model)
-
-    with Path(path).open("w", encoding="utf-8") as file:
-        yaml.safe_dump(template, file, allow_unicode=True, sort_keys=False)
+    content = yaml.safe_dump(template, allow_unicode=True, sort_keys=False)
+    Path(path).write_text(content, encoding="utf-8")

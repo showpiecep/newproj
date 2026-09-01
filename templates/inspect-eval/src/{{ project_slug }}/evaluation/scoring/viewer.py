@@ -61,11 +61,10 @@ def score_view(
         score_keys: ключи значения score, по одной колонке на каждый.
         name: имя представления в переключателе вьюера.
         labels: заголовки колонок; для ключей без записи берётся `short_label`.
-        palette: `good-high` для оценки 0..1, `diverging` для win rate —
-            он центрируется на 0.5, то есть на паритете сторон.
+        palette: `good-high` для оценки 0..100.
         sort_key: ключ, по которому список сортируется худшими вверх.
 
-    Шкала прибита к 0..1, а не к наблюдаемому диапазону: иначе одна и та же
+    Шкала прибита к 0..100, а не к наблюдаемому диапазону: иначе одна и та же
     оценка красится по-разному от прогона к прогону и цвета нельзя сравнивать.
     """
     labels = dict(labels or {})
@@ -84,7 +83,7 @@ def score_view(
             ],
             score_labels={key: labels.get(key, short_label(key)) for key in score_keys},
             score_color_scales={
-                key: ScoreColorScale(palette=palette, min=0.0, max=1.0)
+                key: ScoreColorScale(palette=palette, min=0.0, max=100.0)
                 for key in score_keys
             },
             color_scales_enabled=True,

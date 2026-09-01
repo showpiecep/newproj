@@ -5,8 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from inspect_ai import Epochs
-from inspect_ai import eval as inspect_eval
+from inspect_ai import eval_async as inspect_eval
 from inspect_ai.log import EvalLog
+from inspect_ai.model import Model, get_model
 
 from ..application.interfaces import ServiceUnderTest
 from ..infrastructure.http import HttpServiceUnderTest
@@ -29,6 +30,16 @@ def build_service(config: Config) -> ServiceUnderTest:
     )
 
 
+def build_judge_model(config: Config, run_config: RunConfig) -> Model:
+    """Собирает модель судьи с локальными реквизитами доступа."""
+    api_key = config.judge.api_key.get_secret_value() or None
+    return get_model(
+        run_config.judge.model,
+        api_key=api_key,
+        base_url=config.judge.base_url,
+    )
+
+
 async def run(
     run_config_path: str | Path,
     *,
@@ -38,8 +49,14 @@ async def run(
     """Прогоняет один run-конфиг и возвращает логи Inspect AI."""
     run_config = RunConfig.load(run_config_path)
     service = build_service(config)
+    judge_model = build_judge_model(config, run_config)
     try:
-        return await _evaluate(run_config, service, log_dir=log_dir)
+        return await _evaluate(
+            run_config,
+            service,
+            judge_model=judge_model,
+            log_dir=log_dir,
+        )
     finally:
         await service.aclose()
 
@@ -48,6 +65,7 @@ async def _evaluate(
     run_config: RunConfig,
     service: ServiceUnderTest,
     *,
+    judge_model: str | Model | None = None,
     log_dir: str | None,
 ) -> list[EvalLog]:
     task = service_eval(run_config, service)
@@ -60,9 +78,11 @@ async def _evaluate(
     )
     return await inspect_eval(
         task,
-        model=run_config.judge.model,
+        model=judge_model or run_config.judge.model,
         log_dir=log_dir or "logs",
         epochs=epochs,
         tags=run_config.tags or None,
         max_connections=run_config.judge.max_connections,
+        temperature=run_config.judge.temperature,
+        max_tokens=run_config.judge.max_tokens,
     )

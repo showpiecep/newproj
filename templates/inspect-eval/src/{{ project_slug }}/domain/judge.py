@@ -23,8 +23,8 @@ class CriterionVerdict(BaseModel):
     model_config = {"extra": "forbid"}
 
     criterion: str
-    score: float = Field(ge=0.0, le=1.0)
     reasoning: str = ""
+    score: float = Field(ge=0.0, le=100.0)
 
 
 class JudgeVerdict(BaseModel):

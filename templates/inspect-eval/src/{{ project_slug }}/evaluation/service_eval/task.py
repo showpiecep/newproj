@@ -10,7 +10,7 @@ from ..scoring.judge import judge_scorer
 from ..scoring.values import OVERALL_KEY
 from ..scoring.viewer import score_view
 from .dataset import service_dataset
-from .solver import judge_solver, service_answer_solver
+from .solver import service_answer_solver
 
 SCORER_NAME = "judge"
 """Имя, под которым зарегистрирован scorer: ключ в `sample.scores` и адрес его
@@ -23,15 +23,11 @@ def service_eval(config: RunConfig, service: ServiceUnderTest) -> Task:
 
     return Task(
         dataset=service_dataset(config.dataset, limit=config.limit),
-        solver=[
-            service_answer_solver(service),
-            judge_solver(
-                config.criteria,
-                prompt_version=config.prompt_version,
-                judge_model=config.judge.model,
-            ),
-        ],
-        scorer=judge_scorer(criteria),
+        solver=service_answer_solver(service),
+        scorer=judge_scorer(
+            config.criteria,
+            prompt_version=config.prompt_version,
+        ),
         viewer=score_view(
             SCORER_NAME,
             [OVERALL_KEY, *criteria],
