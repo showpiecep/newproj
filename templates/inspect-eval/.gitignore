@@ -213,6 +213,13 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Rebuilt experiment report artifacts
+reports/data/
+reports/_site/
+reports/.quarto/
+report-snapshot/
+*.quarto_ipynb
+
 # PyPI configuration file
 .pypirc
 

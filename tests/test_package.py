@@ -11,4 +11,7 @@ def test_bundled_template_files_are_present() -> None:
     assert (root / "fastapi-yaml" / "copier.yml").is_file()
     assert (root / "fastapi-yaml" / "src" / "{{ project_slug }}" / "main.py").is_file()
     assert (root / "inspect-eval" / "copier.yml").is_file()
+    assert (
+        root / "inspect-eval" / ".agents" / "skills" / "experiment-report" / "SKILL.md"
+    ).is_file()
     assert isinstance(root, Path)
