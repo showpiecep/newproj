@@ -18,3 +18,9 @@ repos:
         entry: uv run python -m pytest -q
         language: system
         pass_filenames: false
+      - id: config-template
+        name: config.template.yaml актуален
+        entry: uv run python scripts/config_template.py
+        language: system
+        pass_filenames: false
+        files: ^(src/[^/]+/settings/|config\.template\.yaml$)

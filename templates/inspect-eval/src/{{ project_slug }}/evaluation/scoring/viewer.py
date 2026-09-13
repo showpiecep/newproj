@@ -83,8 +83,7 @@ def score_view(
             ],
             score_labels={key: labels.get(key, short_label(key)) for key in score_keys},
             score_color_scales={
-                key: ScoreColorScale(palette=palette, min=0.0, max=100.0)
-                for key in score_keys
+                key: ScoreColorScale(palette=palette, min=0.0, max=100.0) for key in score_keys
             },
             color_scales_enabled=True,
             sort=[TaskSamplesSort.score(scorer_name, sort_key, dir="asc")],

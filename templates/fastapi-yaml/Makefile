@@ -1,4 +1,4 @@
-.PHONY: init config hooks run test lint format check
+.PHONY: init config config-check config-template hooks run test lint format check
 
 init:
 	uv sync --all-groups
@@ -16,6 +16,13 @@ config:
 	@test -f config.yaml || cp config.template.yaml config.yaml
 	@chmod 600 config.yaml
 
+# Шаблон конфигурации не должен отставать от моделей настроек.
+config-check:
+	uv run python scripts/config_template.py
+
+config-template:
+	uv run python scripts/config_template.py --write
+
 run: config
 	uv run python -m {{ project_slug }}.main
 
@@ -29,4 +36,4 @@ format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
-check: lint test
+check: lint config-check test

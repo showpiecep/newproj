@@ -18,9 +18,14 @@ def cli() -> None:
 
 @cli.command("run")
 @click.argument("run_config", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-@click.option("--config", "config_path", default="config.yaml", show_default=True,
-              type=click.Path(dir_okay=False, path_type=Path),
-              help="Мастер-конфиг с ключами и адресом тестируемого сервиса.")
+@click.option(
+    "--config",
+    "config_path",
+    default="config.yaml",
+    show_default=True,
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Мастер-конфиг с ключами и адресом тестируемого сервиса.",
+)
 @click.option("--log-dir", default=None, help="Куда писать .eval-логи (по умолчанию logs/).")
 def run_command(run_config: Path, config_path: Path, log_dir: str | None) -> None:
     """Прогнать оценку по описанию прогона из configs/runs/."""
@@ -31,11 +36,32 @@ def run_command(run_config: Path, config_path: Path, log_dir: str | None) -> Non
 
 
 @cli.command("template")
-@click.option("--out", default="config.template.yaml", show_default=True,
-              type=click.Path(dir_okay=False, path_type=Path))
-def template_command(out: Path) -> None:
+@click.option(
+    "--out",
+    default="config.template.yaml",
+    show_default=True,
+    type=click.Path(dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--check",
+    "check",
+    is_flag=True,
+    help="Не перезаписывать, а проверить, что шаблон не отстал от настроек.",
+)
+def template_command(out: Path, check: bool) -> None:
     """Пересобрать шаблон мастер-конфига по текущим настройкам."""
-    from .settings_template import write_template
+    from .settings_template import check_template, write_template
+
+    if check:
+        problems = check_template(out)
+        if not problems:
+            click.echo(f"{out}: актуален")
+            return
+        click.echo(f"{out} разошёлся с настройками:")
+        for problem in problems:
+            click.echo(f"  - {problem}")
+        # Ненулевой код возврата: проверку запускает хук pre-commit.
+        raise SystemExit(1)
 
     write_template(out)
     click.echo(f"Шаблон конфигурации: {out}")

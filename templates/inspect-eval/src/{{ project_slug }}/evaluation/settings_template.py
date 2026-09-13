@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..settings import Config
-from ..settings.template import write_config_template
+from ..settings.template import template_problems, write_config_template
 
 
 def write_template(path: str | Path) -> None:
@@ -15,3 +15,12 @@ def write_template(path: str | Path) -> None:
     и новый разработчик получает конфиг, который не проходит валидацию.
     """
     write_config_template(Config, path)
+
+
+def check_template(path: str | Path) -> list[str]:
+    """Чем `config.template.yaml` в рабочей копии расходится с моделями настроек.
+
+    Шаблон пересобирается командой, а значит может отстать: в коммит попадает то,
+    что лежит в рабочей копии. Пустой список — расхождений нет.
+    """
+    return template_problems(Config, path)

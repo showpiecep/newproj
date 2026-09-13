@@ -71,11 +71,7 @@ async def _evaluate(
     task = service_eval(run_config, service)
     # Повторы одного сэмпла — эпохи Inspect, а не дубли в датасете: так сэмпл
     # остаётся единицей анализа, а редьюсер сводит эпохи сам.
-    epochs = (
-        Epochs(run_config.epochs, run_config.epochs_reducer)
-        if run_config.epochs > 1
-        else None
-    )
+    epochs = Epochs(run_config.epochs, run_config.epochs_reducer) if run_config.epochs > 1 else None
     return await inspect_eval(
         task,
         model=judge_model or run_config.judge.model,

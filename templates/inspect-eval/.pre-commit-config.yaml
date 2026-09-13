@@ -13,6 +13,12 @@ repos:
         language: system
         pass_filenames: true
         types_or: [python]
+      - id: config-template
+        name: config.template.yaml актуален
+        entry: uv run python -m {{ project_slug }}.main template --check
+        language: system
+        pass_filenames: false
+        files: ^(src/[^/]+/settings/|config\.template\.yaml$)
       - id: pytest
         name: pytest
         entry: uv run python -m pytest -q

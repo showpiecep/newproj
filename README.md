@@ -138,9 +138,22 @@ sh ~/.local/share/newproj/uninstall.sh
 
 ```text
 uv sync
+uv run pre-commit install      # один раз: хуки на каждый git commit
 uv run pytest
-uv run ruff check src tests
+uv run ruff check --config pyproject.toml --force-exclude .
 uv build
+```
+
+Хуки (`ruff check --fix`, `ruff format`, `pytest`) описаны в
+`.pre-commit-config.yaml`, их настройки — в `pyproject.toml`. Код шаблонов
+проверяется той же конфигурацией; исключены только файлы, где Jinja стоит на
+уровне операторов (`from {{ project_slug }} import …`) и как Python не
+разбираются — список в `[tool.ruff] extend-exclude`. Ruff передаётся
+`--config pyproject.toml`, иначе он находит `pyproject.toml` внутри шаблона и
+падает на Jinja вместо версий. Прогон по всему репозиторию:
+
+```text
+uv run pre-commit run --all-files
 ```
 
 Полный smoke-тест собирает wheel, устанавливает его в изолированный каталог и

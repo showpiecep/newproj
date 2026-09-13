@@ -1,4 +1,4 @@
-.PHONY: init config hooks run view score test lint format check
+.PHONY: init config config-check config-template hooks run view score test lint format check
 
 init:
 	uv sync --all-groups
@@ -15,6 +15,13 @@ hooks:
 config:
 	@test -f config.yaml || cp config.template.yaml config.yaml
 	@chmod 600 config.yaml
+
+# Шаблон конфигурации не должен отставать от моделей настроек.
+config-check:
+	uv run python -m {{ project_slug }}.main template --check
+
+config-template:
+	uv run python -m {{ project_slug }}.main template
 
 # Прогон по описанию из configs/runs. Пример: make run RUN=configs/runs/service_eval.yaml
 run: config
@@ -41,4 +48,4 @@ format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
-check: lint test
+check: lint config-check test

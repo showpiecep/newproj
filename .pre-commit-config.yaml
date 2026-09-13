@@ -1,0 +1,27 @@
+# Проверки на коммите. Настройки ruff и pytest — в pyproject.toml; здесь только
+# перечень хуков, потому что сам pre-commit из pyproject не читается.
+#
+# `--config pyproject.toml` обязателен: без него ruff находит pyproject.toml
+# внутри шаблонов и падает на Jinja вместо значений. `--force-exclude` нужен,
+# потому что pre-commit передаёт файлы списком, а тогда исключения из
+# конфигурации не действуют.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --config pyproject.toml --force-exclude --fix
+        language: system
+        pass_filenames: true
+        types_or: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --config pyproject.toml --force-exclude
+        language: system
+        pass_filenames: true
+        types_or: [python]
+      - id: pytest
+        name: pytest
+        entry: uv run python -m pytest -q
+        language: system
+        pass_filenames: false

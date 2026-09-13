@@ -17,6 +17,7 @@ newproj = "newproj.cli:main"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.0",
     "pytest>=8.3",
     "ruff>=0.11",
 ]
@@ -39,6 +40,20 @@ include = [
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+# Конфигурация одна на репозиторий и передаётся ruff явно (`--config pyproject.toml`
+# в хуках): иначе ruff находит pyproject.toml внутри шаблона и падает, потому что
+# там Jinja вместо значений (`requires-python = ">={{ python_version }}"`).
+#
+# Исключены файлы шаблонов, которые как Python не разбираются: Jinja стоит на
+# уровне операторов (`from {{ project_slug }} import ...`). Внутри строк и
+# докстрингов Jinja парсеру не мешает, такие файлы проверяются.
+extend-exclude = [
+    "templates/*/pyproject.toml",
+    "templates/*/tests",
+    "templates/fastapi-yaml/scripts/config_template.py",
+    # Jinja в выражении: `Field(default={{ service_port }})`.
+    "templates/fastapi-yaml/src/*/settings/app.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
