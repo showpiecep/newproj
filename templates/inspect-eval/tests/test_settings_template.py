@@ -1,4 +1,5 @@
-"""Шаблон настроек содержит только обычные YAML-значения и не раскрывает секреты."""
+"""Шаблон настроек содержит только обычные YAML-значения и не раскрывает секреты;
+рядом с ним пишется JSON Schema конфига."""
 
 from pathlib import Path
 
@@ -15,3 +16,4 @@ def test_writes_yaml_safe_defaults(tmp_path: Path) -> None:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert payload["judge"]["api_key"] == "<api_key>"
     assert payload["service"]["timeout"] == 60.0
+    assert (tmp_path / "config.schema.json").is_file()

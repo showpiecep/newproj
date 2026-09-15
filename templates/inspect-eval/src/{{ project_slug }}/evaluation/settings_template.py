@@ -1,26 +1,27 @@
-"""Генерация шаблона мастер-конфига по моделям настроек."""
+"""Генерация шаблона мастер-конфига и его JSON Schema по моделям настроек."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from ..settings import Config
-from ..settings.template import template_problems, write_config_template
+from ..settings.artifacts import config_artifacts_problems, write_config_artifacts
 
 
 def write_template(path: str | Path) -> None:
-    """Пересобирает `config.template.yaml` из текущих моделей настроек.
+    """Пересобирает `config.template.yaml` и `config.schema.json` рядом с ним.
 
-    Шаблон генерируется, а не правится руками: иначе он расходится с моделями,
-    и новый разработчик получает конфиг, который не проходит валидацию.
+    Оба файла генерируются, а не правятся руками: иначе они расходятся с моделями,
+    и новый разработчик получает конфиг, который не проходит валидацию, а редактор —
+    схему, которая подсвечивает не те поля.
     """
-    write_config_template(Config, path)
+    write_config_artifacts(Config, path)
 
 
 def check_template(path: str | Path) -> list[str]:
-    """Чем `config.template.yaml` в рабочей копии расходится с моделями настроек.
+    """Чем шаблон и схема в рабочей копии расходятся с моделями настроек.
 
-    Шаблон пересобирается командой, а значит может отстать: в коммит попадает то,
+    Артефакты пересобираются командой, а значит могут отстать: в коммит попадает то,
     что лежит в рабочей копии. Пустой список — расхождений нет.
     """
-    return template_problems(Config, path)
+    return config_artifacts_problems(Config, path)

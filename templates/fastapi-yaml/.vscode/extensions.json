@@ -8,6 +8,8 @@
     "ms-python.vscode-pylance",
     "usernamehw.errorlens",
     "ms-toolsai.jupyter",
-    "showpiecep.notebook-cell-organizer"
+    "showpiecep.notebook-cell-organizer",
+    "redhat.vscode-yaml",
+    "maxorr.python-override-mark"
   ]
 }

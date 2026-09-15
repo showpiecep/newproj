@@ -18,9 +18,11 @@ repos:
         entry: uv run python -m pytest -q
         language: system
         pass_filenames: false
-      - id: config-template
-        name: config.template.yaml актуален
-        entry: uv run python scripts/config_template.py
+      # Пересобирает config.template.yaml и config.schema.json из моделей настроек.
+      # Если файлы изменились, pre-commit остановит коммит — добавьте их и повторите.
+      - id: config-artifacts
+        name: config template & schema
+        entry: uv run python scripts/config_template.py --write
         language: system
         pass_filenames: false
-        files: ^(src/[^/]+/settings/|config\.template\.yaml$)
+        always_run: true

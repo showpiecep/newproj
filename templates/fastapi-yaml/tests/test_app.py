@@ -24,6 +24,7 @@ def test_bootstrap_writes_template_before_loading_config(tmp_path: Path) -> None
     with TestClient(app):
         assert app.state.config is application.config
 
+    assert (tmp_path / "config.schema.json").is_file()
     template = yaml.safe_load(template_path.read_text(encoding="utf-8"))
     assert template == {
         "app": {

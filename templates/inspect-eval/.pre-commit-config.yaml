@@ -13,12 +13,14 @@ repos:
         language: system
         pass_filenames: true
         types_or: [python]
-      - id: config-template
-        name: config.template.yaml актуален
-        entry: uv run python -m {{ project_slug }}.main template --check
+      # Пересобирает config.template.yaml и config.schema.json из моделей настроек.
+      # Если файлы изменились, pre-commit остановит коммит — добавьте их и повторите.
+      - id: config-artifacts
+        name: config template & schema
+        entry: uv run python -m {{ project_slug }}.main template
         language: system
         pass_filenames: false
-        files: ^(src/[^/]+/settings/|config\.template\.yaml$)
+        always_run: true
       - id: pytest
         name: pytest
         entry: uv run python -m pytest -q

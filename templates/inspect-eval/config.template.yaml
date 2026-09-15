@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./config.schema.json
 judge:
   api_key: "<api_key>"
   base_url: null

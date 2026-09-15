@@ -4,6 +4,11 @@ import yaml
 from pydantic import BaseModel, SecretStr, TypeAdapter
 from pydantic_core import PydanticUndefined
 
+from .schema import CONFIG_SCHEMA_FILENAME
+
+# Ссылка для редактора (yaml-language-server); переезжает в config.yaml при копировании.
+SCHEMA_HEADER = f"# yaml-language-server: $schema=./{CONFIG_SCHEMA_FILENAME}\n"
+
 
 def model_to_template(model: type[BaseModel]) -> dict[str, object]:
     result: dict[str, object] = {}
@@ -27,7 +32,7 @@ def write_config_template(
 ) -> None:
     template = model_to_template(model)
     content = yaml.safe_dump(template, allow_unicode=True, sort_keys=False)
-    Path(path).write_text(content, encoding="utf-8")
+    Path(path).write_text(SCHEMA_HEADER + content, encoding="utf-8")
 
 
 def mapping_keys(data: dict[str, object], prefix: str = "") -> set[str]:

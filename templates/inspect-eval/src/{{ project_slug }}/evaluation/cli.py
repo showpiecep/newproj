@@ -46,25 +46,25 @@ def run_command(run_config: Path, config_path: Path, log_dir: str | None) -> Non
     "--check",
     "check",
     is_flag=True,
-    help="Не перезаписывать, а проверить, что шаблон не отстал от настроек.",
+    help="Не перезаписывать, а проверить, что шаблон и схема не отстали от настроек.",
 )
 def template_command(out: Path, check: bool) -> None:
-    """Пересобрать шаблон мастер-конфига по текущим настройкам."""
+    """Пересобрать шаблон мастер-конфига и его JSON Schema по текущим настройкам."""
     from .settings_template import check_template, write_template
 
     if check:
         problems = check_template(out)
         if not problems:
-            click.echo(f"{out}: актуален")
+            click.echo(f"{out} и схема: актуальны")
             return
-        click.echo(f"{out} разошёлся с настройками:")
+        click.echo("Шаблон и схема конфига разошлись с настройками:")
         for problem in problems:
             click.echo(f"  - {problem}")
-        # Ненулевой код возврата: проверку запускает хук pre-commit.
+        # Ненулевой код возврата: сверку запускают `make config-check` и CI.
         raise SystemExit(1)
 
     write_template(out)
-    click.echo(f"Шаблон конфигурации: {out}")
+    click.echo(f"Шаблон конфигурации и схема: {out.parent}")
 
 
 def main() -> None:

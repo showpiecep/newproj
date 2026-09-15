@@ -74,5 +74,8 @@
   "python.testing.unittestEnabled": true,
   "files.associations": {
     "config*.yaml": "yaml"
+  },
+  "yaml.schemas": {
+    "./config.schema.json": ["config*.yaml"]
   }
 }

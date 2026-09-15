@@ -45,6 +45,18 @@ volume без преобразования вложенных ключей в п
 `config.yaml` уже не проходит валидацию. После загрузки конфига bootstrap также
 учитывает путь из поля `app.config_template_path`.
 
+Рядом с шаблоном пишется `config.schema.json` — JSON Schema конфига из тех же
+моделей. С расширением [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+редактор подсвечивает опечатки в ключах и недопустимые значения и дополняет поля:
+шаблон (и скопированный из него `config.yaml`) ссылается на схему первой строкой
+`# yaml-language-server: $schema=./config.schema.json`, а для конфигов без этой
+строки схема привязана через `.vscode/settings.json`.
+
+Оба файла пересобирает pre-commit-хук `config-artifacts` (вручную —
+`make config-template`): если они отстали от моделей, коммит остановится с уже
+обновлёнными файлами, их нужно добавить в коммит. `make config-check` только
+сверяет без записи.
+
 При запуске через `make run` Uvicorn получает `host` и `port` из `config.yaml`.
 
 ## Логирование

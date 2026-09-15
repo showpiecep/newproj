@@ -2,6 +2,7 @@
 
 init:
 	uv sync --all-groups
+	@$(MAKE) config-template
 	@$(MAKE) hooks
 
 hooks:
@@ -16,7 +17,7 @@ config:
 	@test -f config.yaml || cp config.template.yaml config.yaml
 	@chmod 600 config.yaml
 
-# Шаблон конфигурации не должен отставать от моделей настроек.
+# Шаблон конфигурации и его JSON Schema не должны отставать от моделей настроек.
 config-check:
 	uv run python -m {{ project_slug }}.main template --check
 
