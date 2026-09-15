@@ -1,0 +1,11 @@
+# В контекст сборки попадает только то, что копирует Dockerfile.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src
+
+# Даже внутри src кеши и секреты в образ не нужны.
+**/__pycache__
+**/*.py[cod]
+**/config.yaml
