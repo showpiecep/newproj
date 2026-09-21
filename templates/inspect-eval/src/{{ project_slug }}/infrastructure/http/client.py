@@ -40,5 +40,6 @@ class HttpServiceUnderTest(ServiceUnderTest):
     async def aclose(self) -> None:
         await self._client.aclose()
 
-    def _payload(self, request: ServiceRequest) -> dict[str, object]:
+    @staticmethod
+    def _payload(request: ServiceRequest) -> dict[str, object]:
         return {"question": request.question, **request.context}

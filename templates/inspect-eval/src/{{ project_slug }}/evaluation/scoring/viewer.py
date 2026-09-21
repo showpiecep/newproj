@@ -44,7 +44,7 @@ def short_label(key: str) -> str:
     return "".join(word[:1].upper() for word in words)
 
 
-def score_view(
+def score_view(  # noqa: PLR0913 — 4 из 6 параметров keyword-only с дефолтами
     scorer_name: str,
     score_keys: Sequence[str],
     *,

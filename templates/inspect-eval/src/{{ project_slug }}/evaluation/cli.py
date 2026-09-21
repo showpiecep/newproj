@@ -50,7 +50,9 @@ def run_command(run_config: Path, config_path: Path, log_dir: str | None) -> Non
 )
 def template_command(out: Path, check: bool) -> None:
     """Пересобрать шаблон мастер-конфига и его JSON Schema по текущим настройкам."""
-    from .settings_template import check_template, write_template
+    # Отложенный импорт: settings_template нужен только этой редко вызываемой
+    # команде, не остальному CLI.
+    from .settings_template import check_template, write_template  # noqa: PLC0415
 
     if check:
         problems = check_template(out)

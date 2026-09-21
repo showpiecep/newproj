@@ -25,7 +25,7 @@ dev = [
     "pandas>=2.2",
     "pre-commit>=4.0",
     "pytest>=8.3",
-    "ruff>=0.9",
+    "ruff>=0.11",
 ]
 
 [build-system]
@@ -42,9 +42,26 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py{{ python_version | replace('.', '') }}"
+# too-many-public-methods (PLR0904) и другие design-правила из lint.pylint
+# ниже пока живут только в preview.
+preview = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "PLR", "PLC0415", "C90"]
 # Комментарии, докстринги и сообщения об ошибках на русском: RUF001-003 считают
 # кириллицу «неоднозначной» и срабатывают на каждой второй строке.
-ignore = ["RUF001", "RUF002", "RUF003"]
+# RUF067/RUF069/RUF105/RUF201 — preview-правила, не связанные с декомпозицией,
+# ради которой включён preview; адресуются отдельным заходом.
+ignore = ["RUF001", "RUF002", "RUF003", "RUF067", "RUF069", "RUF105", "RUF201"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Сравнение с конкретным ожидаемым значением — смысл теста, а не магическое число.
+"tests/**" = ["PLR2004"]
+
+[tool.ruff.lint.pylint]
+# Дефолт ruff/pylint — 20; у нас интерфейсы и use case'ы узкие по правилам
+# AGENTS.md, поэтому порог ближе к «разросшийся класс», а не к общему случаю.
+max-public-methods = 7
