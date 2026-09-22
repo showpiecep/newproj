@@ -329,9 +329,10 @@ def update_tool(args: argparse.Namespace) -> int:
     uv = shutil.which("uv")
     if uv is None:
         raise RuntimeError("Не найден uv. Установите его: https://docs.astral.sh/uv/")
-    command = [uv, "tool", "upgrade", "newproj"]
-    if args.force:
-        command.append("--reinstall")
+    # Установка идёт по адресу `releases/latest/download/...`, который не
+    # меняется от релиза к релизу. uv сравнивает такие требования по URL, а не
+    # по содержимому, поэтому без `--reinstall` отвечает «Nothing to upgrade».
+    command = [uv, "tool", "upgrade", "newproj", "--reinstall"]
     return subprocess.run(command, check=False).returncode
 
 
@@ -366,9 +367,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list", help="показать доступные шаблоны")
 
     update = subparsers.add_parser("update", help="обновить установленную команду и шаблоны")
-    update_mode = update.add_mutually_exclusive_group()
-    update_mode.add_argument("--check", action="store_true", help="только проверить версию")
-    update_mode.add_argument("--force", action="store_true", help="переустановить текущую версию")
+    update.add_argument("--check", action="store_true", help="только проверить версию")
     return parser
 
 

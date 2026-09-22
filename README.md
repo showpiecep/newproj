@@ -109,8 +109,10 @@ newproj update
 uv tool uninstall newproj
 ```
 
-`newproj update` вызывает `uv tool upgrade newproj`, поэтому команда и встроенные
-шаблоны обновляются одной атомарной установкой. Оболочечные rc-файлы newproj не
+`newproj update` вызывает `uv tool upgrade newproj --reinstall`, поэтому команда
+и встроенные шаблоны обновляются одной атомарной установкой. `--reinstall`
+обязателен: адрес `releases/latest/download/...` не меняется между релизами, а
+uv сравнивает такие установки по адресу, а не по содержимому. Оболочечные rc-файлы newproj не
 изменяет.
 
 ### Переход со старой Zsh-версии

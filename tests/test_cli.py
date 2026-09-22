@@ -163,7 +163,7 @@ def test_update_uses_uv_tool_upgrade(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(cli.subprocess, "run", fake_run)
 
-    result = cli.update_tool(SimpleNamespace(check=False, force=True))
+    result = cli.update_tool(SimpleNamespace(check=False))
 
     assert result == 0
     assert commands == [["/bin/uv", "tool", "upgrade", "newproj", "--reinstall"]]
