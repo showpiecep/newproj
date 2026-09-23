@@ -8,6 +8,7 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+from .requirements import UnfilledSettingsError, unfilled_fields
 from .sections.app import AppSettings
 from .sections.base import Base
 from .sections.logging import LoggingSettings
@@ -54,4 +55,10 @@ class Config(Base):
                 yaml_file_encoding="utf-8",
             )
 
-        return FileConfig()
+        config = FileConfig()
+
+        unfilled = unfilled_fields(config)
+        if unfilled:
+            raise UnfilledSettingsError(unfilled, str(config_path))
+
+        return config

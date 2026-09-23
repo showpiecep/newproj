@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from ..settings import Config
+from ..settings import Config, UnfilledSettingsError
 from .launch import run as run_eval
 
 
@@ -70,4 +70,13 @@ def template_command(out: Path, check: bool) -> None:
 
 
 def main() -> None:
-    cli()
+    """Точка входа CLI.
+
+    Незаполненный конфиг — не сбой программы, а сообщение оператору, поэтому
+    печатается без traceback.
+    """
+    try:
+        cli()
+    except UnfilledSettingsError as error:
+        click.echo(str(error), err=True)
+        raise SystemExit(1) from None
