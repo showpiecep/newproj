@@ -50,7 +50,8 @@ line-length = 100
 extend-exclude = [
     "templates/*/pyproject.toml",
     "templates/*/tests",
-    "templates/fastapi-yaml/scripts/config_template.py",
+    # Скрипты конфигурации импортируют пакет проекта: `from {{ project_slug }} ...`.
+    "templates/*/scripts/config_*.py",
     # Jinja в выражении: `Field(default={{ service_port }})`.
     "templates/fastapi-yaml/src/*/settings/sections/app.py",
 ]

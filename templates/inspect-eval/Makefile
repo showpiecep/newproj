@@ -13,9 +13,11 @@ hooks:
 		echo "Выполните git init, затем make hooks."; \
 	fi
 
+# Локальный конфиг с секретами: создаётся один раз и в git не попадает. В нём только
+# секреты и обязательные поля, остальное — умолчания (полный список —
+# config.template.yaml, полная копия — cp config.template.yaml config.yaml).
 config:
-	@test -f config.yaml || cp config.template.yaml config.yaml
-	@chmod 600 config.yaml
+	@uv run python -m {{ project_slug }}.main init-config
 
 # Шаблон конфигурации и его JSON Schema не должны отставать от моделей настроек.
 config-check:

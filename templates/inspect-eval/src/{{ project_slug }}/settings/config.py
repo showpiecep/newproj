@@ -51,8 +51,7 @@ class Config(Base):
         config_path = Path(path)
         if not config_path.is_file():
             raise FileNotFoundError(
-                f"Configuration file not found: {config_path}. "
-                "Copy config.template.yaml to config.yaml first."
+                f"Нет файла конфигурации: {config_path}. Создайте его командой make config."
             )
 
         class FileConfig(cls):

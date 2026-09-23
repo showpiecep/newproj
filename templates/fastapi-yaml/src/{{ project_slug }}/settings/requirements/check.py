@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, SecretStr
 
-from .fields import MUST_BE_FILLED
+from .fields import is_must_be_filled
 
 
 @dataclass(frozen=True)
@@ -54,8 +54,7 @@ def unfilled_fields(settings: BaseModel, prefix: str = "") -> list[UnfilledField
             found += unfilled_fields(value, f"{path}.")
             continue
 
-        extra = field.json_schema_extra
-        if not (isinstance(extra, dict) and extra.get(MUST_BE_FILLED)):
+        if not is_must_be_filled(field):
             continue
 
         unfilled = _unfilled_reason(value, name)

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ..settings import Config
 from ..settings.artifacts import config_artifacts_problems, write_config_artifacts
+from ..settings.artifacts.minimal import write_minimal_config
 
 
 def write_template(path: str | Path) -> None:
@@ -25,3 +26,15 @@ def check_template(path: str | Path) -> list[str]:
     что лежит в рабочей копии. Пустой список — расхождений нет.
     """
     return config_artifacts_problems(Config, path)
+
+
+def write_local_config(path: str | Path) -> None:
+    """Создаёт минимальный `config.yaml`: только секреты и обязательные поля.
+
+    Остальное берётся из умолчаний моделей, поэтому в файле видно только то, что
+    задано осознанно, а новые умолчания подхватываются без его правки.
+    """
+    write_minimal_config(Config, path)
+    # Только владельцу: в файле секреты. На Windows chmod снимает лишь флаг
+    # «только чтение», чего здесь и достаточно.
+    Path(path).chmod(0o600)

@@ -11,8 +11,8 @@ HTTP-ручек у него нет — наружу он смотрит CLI-ко
 
 ```bash
 make init                                   # зависимости и git-хуки
-make config                                 # config.yaml из шаблона
-$EDITOR config.yaml                         # ключ судьи и адрес сервиса
+make config                                 # минимальный config.yaml
+$EDITOR config.yaml                         # вписать ключ судьи
 make run RUN=configs/runs/service_eval.yaml # прогон
 make view                                   # посмотреть логи
 ```
@@ -54,7 +54,8 @@ src/{{ project_slug }}/
   settings/          мастер-конфиг: ключи и адреса
     config.py        единственный публичный модуль пакета
     sections/        разделы конфигурации, по файлу на раздел
-    artifacts/       генерация config.template.yaml и config.schema.json
+    artifacts/       генерация config.template.yaml, config.schema.json и
+                     минимального config.yaml
 tests/
 ```
 
@@ -65,9 +66,14 @@ tests/
 ## Разделение конфигураций
 
 - `config.yaml` — секреты и локальные адреса. Не в репозитории, у каждого свой.
-  Собирается из `config.template.yaml`; рядом лежит `config.schema.json`, по которой
-  редактор (расширение YAML) подсвечивает и дополняет конфиг. Оба файла пересобирает
-  pre-commit-хук `config-artifacts` и `make config-template`.
+  `make config` создаёт его минимальным: только секреты и обязательные поля,
+  остальное берётся из умолчаний моделей. Так в файле видно только то, что задано
+  осознанно, а новые умолчания подхватываются без его правки. Поле, которое нужно
+  поменять, дописывается по `config.template.yaml` (полный список с умолчаниями) или
+  автодополнению по `config.schema.json`; полная копия шаблона —
+  `cp config.template.yaml config.yaml`. Существующий `config.yaml` команда не
+  перезаписывает. Шаблон и схему пересобирает pre-commit-хук `config-artifacts` и
+  `make config-template`.
 - `configs/runs/*.yaml` — параметры прогона: датасет, критерии, судья, версия
   промпта. Версионируются, потому что без них результат нельзя воспроизвести.
 

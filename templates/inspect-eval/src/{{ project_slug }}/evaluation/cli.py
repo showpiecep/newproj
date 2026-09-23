@@ -69,6 +69,27 @@ def template_command(out: Path, check: bool) -> None:
     click.echo(f"Шаблон конфигурации и схема: {out.parent}")
 
 
+@cli.command("init-config")
+@click.option(
+    "--out",
+    default="config.yaml",
+    show_default=True,
+    type=click.Path(dir_okay=False, path_type=Path),
+)
+def init_config_command(out: Path) -> None:
+    """Создать минимальный config.yaml: только секреты и обязательные поля."""
+    # Отложенный импорт по той же причине, что и в команде template.
+    from .settings_template import write_local_config  # noqa: PLC0415
+
+    # Существующий конфиг не перезаписывается: в нём секреты.
+    if out.exists():
+        click.echo(f"{out} уже существует — не перезаписываю")
+        return
+
+    write_local_config(out)
+    click.echo(f"Создан минимальный конфиг: {out}")
+
+
 def main() -> None:
     """Точка входа CLI.
 

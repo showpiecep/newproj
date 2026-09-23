@@ -10,7 +10,7 @@ Pydantic при старте приложения.
 git init
 make init
 make config
-# Отредактируйте config.yaml
+# Впишите в config.yaml секреты и обязательные поля, если они есть
 make run
 ```
 
@@ -25,6 +25,13 @@ make run
 
 `config.template.yaml` коммитится и описывает полное дерево настроек.
 `config.yaml` создаётся локально, содержит реальные секреты и игнорируется Git.
+
+`make config` создаёт минимальный `config.yaml`: только секреты и обязательные
+поля, остальное приложение берёт из умолчаний моделей. Поэтому в файле видно
+только то, что задано осознанно, а новые умолчания подхватываются без его правки.
+Нужное поле дописывается по шаблону или автодополнению схемы; полная копия
+шаблона — `cp config.template.yaml config.yaml`. Существующий `config.yaml`
+команда не перезаписывает.
 Путь к другому YAML можно передать приложению программно:
 
 ```python
@@ -48,7 +55,7 @@ volume без преобразования вложенных ключей в п
 Рядом с шаблоном пишется `config.schema.json` — JSON Schema конфига из тех же
 моделей. С расширением [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
 редактор подсвечивает опечатки в ключах и недопустимые значения и дополняет поля:
-шаблон (и скопированный из него `config.yaml`) ссылается на схему первой строкой
+шаблон и созданный `make config` `config.yaml` ссылаются на схему первой строкой
 `# yaml-language-server: $schema=./config.schema.json`, а для конфигов без этой
 строки схема привязана через `.vscode/settings.json`.
 
@@ -117,7 +124,8 @@ src/{{ project_slug }}/
 │   │   ├── app.py
 │   │   ├── base.py
 │   │   └── logging.py
-│   └── artifacts/         генерация config.template.yaml и config.schema.json
+│   └── artifacts/         генерация config.template.yaml, config.schema.json
+│       ├── minimal.py     и минимального config.yaml
 │       ├── schema.py
 │       └── template.py
 ├── observability/
