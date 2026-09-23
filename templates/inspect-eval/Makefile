@@ -1,4 +1,4 @@
-.PHONY: init config config-check config-template hooks run view score test lint format check
+.PHONY: init config config-check config-template format-check hooks run view score test lint format check
 
 init:
 	uv sync --all-groups
@@ -7,7 +7,7 @@ init:
 
 hooks:
 	@if [ -d .git ]; then \
-		uv run pre-commit install; \
+		uv run pre-commit install --hook-type pre-commit --hook-type commit-msg; \
 	else \
 		echo "pre-commit: пропущено, .git не найден."; \
 		echo "Выполните git init, затем make hooks."; \
@@ -45,8 +45,11 @@ test:
 lint:
 	uv run ruff check .
 
+format-check:
+	uv run ruff format --check .
+
 format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
-check: lint config-check test
+check: lint format-check config-check test
