@@ -2,7 +2,7 @@ import pytest
 from loguru import logger
 
 from {{ project_slug }}.observability import configure_logging
-from {{ project_slug }}.settings.logging import LoggingSettings
+from {{ project_slug }}.settings import LoggingSettings
 
 
 def test_application_logs_use_configured_loguru_level(

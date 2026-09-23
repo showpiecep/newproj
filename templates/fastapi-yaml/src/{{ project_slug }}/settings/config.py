@@ -8,9 +8,9 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
-from .app import AppSettings
-from .base import Base
-from .logging import LoggingSettings
+from .sections.app import AppSettings
+from .sections.base import Base
+from .sections.logging import LoggingSettings
 
 
 class Config(Base):

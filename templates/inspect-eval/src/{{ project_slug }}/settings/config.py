@@ -8,10 +8,10 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
-from .base import Base
-from .judge import JudgeSettings
-from .logging import LoggingSettings
-from .service import ServiceSettings
+from .sections.base import Base
+from .sections.judge import JudgeSettings
+from .sections.logging import LoggingSettings
+from .sections.service import ServiceSettings
 
 
 class Config(Base):

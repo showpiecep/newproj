@@ -92,11 +92,14 @@ src/{{ project_slug }}/
 │   └── routers/
 │       └── __init__.py
 ├── settings/
-│   ├── app.py
-│   ├── base.py
-│   ├── config.py
-│   ├── logging.py
-│   └── template.py
+│   ├── config.py          мастер-конфиг: единственный публичный модуль пакета
+│   ├── sections/          разделы конфигурации, по файлу на раздел
+│   │   ├── app.py
+│   │   ├── base.py
+│   │   └── logging.py
+│   └── artifacts/         генерация config.template.yaml и config.schema.json
+│       ├── schema.py
+│       └── template.py
 ├── observability/
 │   └── logging.py
 └── usecases/

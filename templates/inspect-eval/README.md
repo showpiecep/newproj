@@ -52,6 +52,9 @@ src/{{ project_slug }}/
   domain/            вердикт судьи и его разбор; не знает про Inspect AI
   infrastructure/    реализации порта
   settings/          мастер-конфиг: ключи и адреса
+    config.py        единственный публичный модуль пакета
+    sections/        разделы конфигурации, по файлу на раздел
+    artifacts/       генерация config.template.yaml и config.schema.json
 tests/
 ```
 

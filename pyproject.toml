@@ -52,7 +52,7 @@ extend-exclude = [
     "templates/*/tests",
     "templates/fastapi-yaml/scripts/config_template.py",
     # Jinja в выражении: `Field(default={{ service_port }})`.
-    "templates/fastapi-yaml/src/*/settings/app.py",
+    "templates/fastapi-yaml/src/*/settings/sections/app.py",
 ]
 
 [tool.ruff.lint]

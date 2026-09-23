@@ -1,8 +1,7 @@
 from pathlib import Path
 
 from ..observability import configure_logging
-from ..settings import Config
-from ..settings.app import AppSettings
+from ..settings import AppSettings, Config
 from ..settings.artifacts import write_config_artifacts
 from .app import Application
 

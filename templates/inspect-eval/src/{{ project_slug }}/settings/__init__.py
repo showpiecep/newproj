@@ -1,5 +1,6 @@
 from .config import Config
-from .judge import JudgeSettings
-from .service import ServiceSettings
+from .sections.judge import JudgeSettings
+from .sections.logging import LoggingSettings
+from .sections.service import ServiceSettings
 
-__all__ = ["Config", "JudgeSettings", "ServiceSettings"]
+__all__ = ["Config", "JudgeSettings", "LoggingSettings", "ServiceSettings"]

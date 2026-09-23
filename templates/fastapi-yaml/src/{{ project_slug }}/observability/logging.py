@@ -2,7 +2,7 @@ import sys
 
 from loguru import logger
 
-from ..settings.logging import LoggingSettings
+from ..settings import LoggingSettings
 
 LOG_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
