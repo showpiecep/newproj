@@ -1,0 +1,46 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        pass_filenames: true
+        types_or: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        pass_filenames: true
+        types_or: [python]
+      # Пересобирает config.template.yaml и config.schema.json из моделей настроек.
+      # Если файлы изменились, pre-commit остановит коммит — добавьте их и повторите.
+      - id: config-artifacts
+        name: config template & schema
+        entry: uv run python scripts/config_template.py --write
+        language: system
+        pass_filenames: false
+        always_run: true
+      # Подсказывает формат Conventional Commits, но коммит не блокирует:
+      # быстрый коммит важнее идеального сообщения, поправить можно через --amend.
+      - id: commit-message-hint
+        name: conventional commit (предупреждение)
+        entry: uv run python scripts/commit_message_hint.py
+        language: system
+        stages: [commit-msg]
+        verbose: true
+      # Считает файлы одного расширения в затронутых директориях. Много файлов
+      # на одном уровне — обычно признак, что их пора группировать по смыслу.
+      # Порог эвристический, поэтому хук только предупреждает.
+      - id: flat-directory-hint
+        name: плоские директории (предупреждение)
+        entry: uv run python scripts/flat_directory_hint.py --max 5
+        language: system
+        pass_filenames: true
+        # Тесты накапливаются по одному на случай и до порога доходят первыми,
+        # хотя группировать их по поддиректориям обычно незачем.
+        exclude: ^tests/
+        # Один процесс на все файлы: иначе pre-commit дробит их на пачки и
+        # печатает предупреждение по разу на пачку.
+        require_serial: true
+        verbose: true

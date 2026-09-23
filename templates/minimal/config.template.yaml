@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=./config.schema.json
+app:
+  name: "{{ project_name }}"
+  seed: 42

@@ -135,6 +135,7 @@ sh ~/.local/share/newproj/uninstall.sh
 |---|---|
 | [fastapi-yaml](templates/fastapi-yaml/) | FastAPI-сервис с типизированной YAML-конфигурацией, Loguru и настроенными ruff/pytest/pre-commit |
 | [inspect-eval](templates/inspect-eval/) | Сервис оценки на Inspect AI с LLM-судьёй, конфигами прогонов и просмотром логов |
+| [minimal](templates/minimal/) | Минимальный Python-проект без фреймворка: YAML-конфигурация, ruff и pre-commit-хуки — для прототипов и воспроизведения статей |
 
 ## Разработка
 

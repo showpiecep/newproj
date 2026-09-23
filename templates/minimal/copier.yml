@@ -1,0 +1,39 @@
+project_name:
+  type: str
+  help: "Название проекта"
+  default: "My Project"
+
+project_slug:
+  type: str
+  default: "{{ project_name.lower().replace(' ', '_').replace('-', '_') }}"
+  validator: >-
+    {% if not (project_slug | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Имя пакета должно начинаться с буквы и содержать только a-z, 0-9 и _
+    {% endif %}
+
+python_version:
+  type: str
+  default: "3.13"
+
+_templates_suffix: ""
+
+_copy_without_render:
+  - "*.lock"
+
+_exclude:
+  - ".git"
+  - ".git/**"
+  - "copier.yml"
+  - "copier.yaml"
+  - ".newproj-managed"
+  # Артефакты локальной работы с шаблоном не должны попадать в новый проект.
+  - "config.yaml"
+  - "config.schema.json"
+  - ".venv"
+  - ".venv/**"
+  - "__pycache__"
+  - "__pycache__/**"
+  - ".pytest_cache"
+  - ".pytest_cache/**"
+  - ".ruff_cache"
+  - ".ruff_cache/**"

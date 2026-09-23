@@ -14,4 +14,5 @@ def test_bundled_template_files_are_present() -> None:
     assert (
         root / "inspect-eval" / ".agents" / "skills" / "experiment-report" / "SKILL.md"
     ).is_file()
+    assert (root / "minimal" / "copier.yml").is_file()
     assert isinstance(root, Path)

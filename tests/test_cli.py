@@ -19,7 +19,7 @@ def test_bundled_templates_are_discoverable(
 
     templates = cli.discover_templates()
 
-    assert [template.name for template in templates] == ["fastapi-yaml", "inspect-eval"]
+    assert [template.name for template in templates] == ["fastapi-yaml", "inspect-eval", "minimal"]
     assert all(template.built_in for template in templates)
 
 
@@ -31,8 +31,13 @@ def test_custom_template_is_added(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
 
     templates = cli.discover_templates()
 
-    assert [template.name for template in templates] == ["fastapi-yaml", "inspect-eval", "mine"]
-    assert not templates[-1].built_in
+    assert [template.name for template in templates] == [
+        "fastapi-yaml",
+        "inspect-eval",
+        "mine",
+        "minimal",
+    ]
+    assert not next(template for template in templates if template.name == "mine").built_in
 
 
 def test_legacy_managed_template_does_not_shadow_bundled(
