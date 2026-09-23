@@ -3,4 +3,4 @@
 docs/ export-ignore
 cliff.toml export-ignore
 .gitattributes export-ignore
-.github/ export-ignore
+/.github/ export-ignore

@@ -1,0 +1,36 @@
+name: Проверки
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: make check
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Получить исходный код
+        uses: actions/checkout@v4
+
+      - name: Установить uv и Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "{{ python_version }}"
+          enable-cache: true
+
+      # Аналог make init для CI, но без пересборки config.template.yaml и
+      # config.schema.json: проверка ниже должна видеть файлы такими, какими их
+      # закоммитили. --locked заодно ловит uv.lock, отставший от pyproject.toml.
+      - name: Установить зависимости
+        run: uv sync --locked --all-groups
+
+      # Та же команда, что и локально: линтер, сверка шаблона конфигурации и тесты.
+      - name: Проверки
+        run: make check

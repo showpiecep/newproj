@@ -1,0 +1,25 @@
+name: Задача
+description: Доработка, улучшение или исследование
+labels: [task]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Цель
+      description: Какую проблему решаем и зачем. Не решение, а потребность.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Критерий готовности
+      description: По чему поймём, что задача закрыта.
+      placeholder: |
+        - …
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Контекст и ограничения
+      description: Ссылки, обсуждения, известные варианты решения, что трогать нельзя.

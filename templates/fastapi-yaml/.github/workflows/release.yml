@@ -1,0 +1,100 @@
+name: Релиз
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Нужно для создания релиза.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Опубликовать релиз
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Получить исходный код
+        uses: actions/checkout@v4
+        with:
+          # Аннотация тега и история нужны для описания релиза.
+          fetch-depth: 0
+
+      # actions/checkout может положить тег без аннотации, поэтому теги
+      # перечитываются с сервера целиком.
+      - name: Перечитать теги
+        run: git fetch --force --tags
+
+      - name: Сверить тег с версией в pyproject.toml
+        run: |
+          project_version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' pyproject.toml)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ "$project_version" != "$tag_version" ]; then
+            echo "Тег $GITHUB_REF_NAME не совпадает с версией $project_version в pyproject.toml." >&2
+            echo "Обновите version в pyproject.toml или перевесьте тег." >&2
+            exit 1
+          fi
+
+      - name: Прочитать пояснение из аннотации тега
+        run: |
+          # У тега без аннотации git подставляет сообщение коммита, поэтому
+          # проверяется тип объекта, а не пустота текста.
+          if [ "$(git cat-file -t "$GITHUB_REF_NAME")" != "tag" ]; then
+            echo "Тег $GITHUB_REF_NAME создан без аннотации: непонятно, что это за релиз." >&2
+            echo "Создайте тег с пояснением, например:" >&2
+            echo "  git tag -a -f $GITHUB_REF_NAME -m 'кратко о релизе' -m 'зачем зафиксировано это состояние'" >&2
+            echo "  git push --force origin $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          subject="$(git tag -l --format='%(contents:subject)' "$GITHUB_REF_NAME")"
+          body="$(git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME")"
+
+          if [ -z "$subject" ]; then
+            echo "Аннотация тега $GITHUB_REF_NAME пустая: непонятно, что это за релиз." >&2
+            echo "Создайте тег с пояснением, например:" >&2
+            echo "  git tag -a -f $GITHUB_REF_NAME -m 'кратко о релизе' -m 'зачем зафиксировано это состояние'" >&2
+            echo "  git push --force origin $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          {
+            printf 'notes<<RELEASE_NOTES\n'
+            printf '%s\n' "$subject"
+            [ -n "$body" ] && printf '\n%s\n' "$body"
+            printf 'RELEASE_NOTES\n'
+          } >>"$GITHUB_ENV"
+
+      - name: Установить uv и Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "{{ python_version }}"
+          enable-cache: true
+
+      - name: Установить зависимости
+        run: uv sync --locked --all-groups
+
+      # Тегом фиксируется состояние кода, поэтому проверки прогоняются ещё раз
+      # именно на нём, а не только на ветке.
+      - name: Проверки
+        run: make check
+
+      # Пояснение из аннотации тега становится началом описания, ниже GitHub
+      # дописывает список изменений и участников.
+      - name: Создать релиз
+        env:
+          GH_TOKEN: {% raw %}${{ github.token }}{% endraw %}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Тег перевесили и запустили релиз заново: описание должно обновиться.
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --title "$GITHUB_REF_NAME" \
+              --notes "$notes" \
+              --generate-notes
+          fi
